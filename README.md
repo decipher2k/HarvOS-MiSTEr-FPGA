@@ -136,13 +136,7 @@ Not included:
 - No peripherals beyond timer/irq stub
 
 ## Getting Started
-1. Run `verilator --lint-only rtl/*.sv` to check lint.
-2. Simulate with Icarus/Verilator:  
-   ```bash
-   iverilog -g2012 -o tb tb/harvos_tb.sv rtl/*.sv
-   vvp tb
-   ```
-3. Waveforms (`.vcd`) are produced for inspection.
+Synthesize using Intel Quarkus Prime
 
 ### 🎓 Educational Use
 
