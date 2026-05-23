@@ -1,0 +1,29 @@
+name: HarvOS CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run reference checks
+        working-directory: Template_MiSTer-master
+        run: python tests/run_all.py
+      - name: Run production gate without external FPGA tools
+        working-directory: Template_MiSTer-master
+        run: |
+          printf "ci-production-key" > release.key
+          python tools/harvos_prod_check.py --key-file release.key || true
+          python - <<'PY'
+          import json
+          report=json.load(open('release/production_report.json'))
+          assert report['checks']['reference_tests']['ok']
+          assert report['checks']['production_image_verify']['ok']
+          assert 'external_tools' in report['blockers']
+          PY

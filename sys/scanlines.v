@@ -1,3 +1,5 @@
+// Copyright 2025 Dennis Michael Heine
+
 module scanlines #(parameter v2=0)
 (
 	input             clk,

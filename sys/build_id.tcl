@@ -1,3 +1,5 @@
+# Copyright 2025 Dennis Michael Heine
+
 
 # Build TimeStamp Verilog Module
 # Jeff Wiencrot - 8/1/2011

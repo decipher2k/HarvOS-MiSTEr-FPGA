@@ -1,0 +1,25 @@
+# Copyright 2025 Dennis Michael Heine
+
+[options]
+mode prove
+depth 32
+
+[engines]
+smtbmc
+
+[script]
+read -formal harvos_pkg.sv
+read -formal harvos_pagetable.sv
+read -formal harvos_tlb.sv
+read -formal harvos_mmu.sv
+read -formal harvos_mpu.sv
+read -formal harvos_assertions.sv
+prep -top harvos_assertions
+
+[files]
+../rtl/harvos_pkg.sv
+../rtl/harvos_pagetable.sv
+../rtl/harvos_tlb.sv
+../rtl/harvos_mmu.sv
+../rtl/harvos_mpu.sv
+../rtl/harvos_assertions.sv

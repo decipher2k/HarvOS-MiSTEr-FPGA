@@ -1,0 +1,43 @@
+# Copyright 2025 Dennis Michael Heine
+
+start:
+  ADDI x1, x0, 0
+  ADDI x2, x0, 5
+  ADDI x3, x0, 7
+  ADD x4, x2, x3
+  SW x4, 0(x1)
+  LW x5, 0(x1)
+  BEQ x4, x5, pass
+  EBREAK
+pass:
+  ADDI x10, x0, 1
+  SLLI x10, x10, 3
+  SRLI x10, x10, 1
+  ADDI x11, x0, 4
+  BEQ x10, x11, byte_test
+  EBREAK
+byte_test:
+  ADDI x10, x0, 90
+  SB x10, 20(x1)
+  LBU x11, 20(x1)
+  BEQ x10, x11, unsigned_test
+  EBREAK
+unsigned_test:
+  ADDI x12, x0, 91
+  BLTU x10, x12, unsigned_test_2
+  EBREAK
+unsigned_test_2:
+  BGEU x12, x10, mem_clear
+  EBREAK
+mem_clear:
+  ADDI x9, x0, 16
+  ADDI x8, x0, 4
+  CLRMEM x9, x8
+  ENTROPY x6
+  SW x6, 4(x1)
+  CLRREG x6
+  ADDI x7, x0, 0
+loop:
+  ADDI x7, x7, 1
+  SW x7, 8(x1)
+  JAL x0, loop

@@ -1,0 +1,4 @@
+# Copyright 2025 Dennis Michael Heine
+
+QUARTUS_VERSION = "13.1"
+PROJECT_REVISION = "Template_Q13"

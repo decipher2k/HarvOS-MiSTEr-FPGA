@@ -1,3 +1,5 @@
+// Copyright 2025 Dennis Michael Heine
+
 `timescale 1ns/10ps
 module  pll_audio_0002(
 

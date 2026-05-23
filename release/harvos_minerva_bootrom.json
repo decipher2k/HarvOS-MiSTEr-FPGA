@@ -1,0 +1,10 @@
+{
+  "format": "HarvOS-demo-bootrom-v1",
+  "height": 240,
+  "payload_bytes": 207360,
+  "payload_sha256": "af19abd7a320154f85ab0beb5db11ec0624c9922c8d4dfab1a6279fc61184770",
+  "pixel_format": "rgb565-le",
+  "pixels": 103680,
+  "source": "C:\\Users\\dennis\\Documents\\GitHub\\MINERVA_closed\\fantasy-pi\\boot.png",
+  "width": 432
+}

@@ -1,3 +1,5 @@
+# Copyright 2025 Dennis Michael Heine
+
 # Specify root clocks
 create_clock -period "50.0 MHz"  [get_ports FPGA_CLK1_50]
 create_clock -period "50.0 MHz"  [get_ports FPGA_CLK2_50]
@@ -74,4 +76,4 @@ set_false_path -from {ascal|o_hsstart* ascal|o_vsstart* ascal|o_hsend* ascal|o_v
 set_false_path -from {ascal|o_hsize* ascal|o_vsize*}
 
 set_false_path -from {mcp23009|flg_*}
-set_false_path -to   {sysmem|fpga_interfaces|clocks_resets*}
+set_false_path -to   {sysmem|fpga_interfaces|clocks_resets|f2h*}

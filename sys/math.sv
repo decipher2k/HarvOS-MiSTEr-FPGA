@@ -1,3 +1,5 @@
+// Copyright 2025 Dennis Michael Heine
+
 
 // result = num/div
 module sys_udiv

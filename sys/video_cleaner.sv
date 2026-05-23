@@ -1,3 +1,5 @@
+// Copyright 2025 Dennis Michael Heine
+
 //
 //
 // Copyright (c) 2018 Sorgelig

@@ -1,3 +1,5 @@
+# Copyright 2025 Dennis Michael Heine
+
 set_global_assignment -name FAMILY "Cyclone V"
 set_global_assignment -name DEVICE 5CSEBA6U23I7
 set_global_assignment -name DEVICE_FILTER_PACKAGE UFBGA
@@ -65,8 +67,8 @@ set_location_assignment PIN_AD17 -to SDRAM_A[11]
 set_location_assignment PIN_D12 -to SDRAM_A[12]
 set_location_assignment PIN_Y17 -to SDRAM_BA[0]
 set_location_assignment PIN_AB25 -to SDRAM_BA[1]
-set_location_assignment PIN_E8 -to SDRAM_DQ[0]
-set_location_assignment PIN_V12 -to SDRAM_DQ[1]
+set_location_assignment PIN_V12 -to SDRAM_DQ[0]
+set_location_assignment PIN_E8 -to SDRAM_DQ[1]
 set_location_assignment PIN_D11 -to SDRAM_DQ[2]
 set_location_assignment PIN_W12 -to SDRAM_DQ[3]
 set_location_assignment PIN_AH13 -to SDRAM_DQ[4]

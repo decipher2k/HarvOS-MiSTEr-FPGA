@@ -1,3 +1,5 @@
+// Copyright 2025 Dennis Michael Heine
+
 // megafunction wizard: %Altera PLL Reconfig v17.0%
 // GENERATION: XML
 // pll_cfg.v

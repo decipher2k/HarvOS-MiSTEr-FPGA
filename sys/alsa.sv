@@ -1,3 +1,5 @@
+// Copyright 2025 Dennis Michael Heine
+
 //============================================================================
 //
 //  ALSA sound support for MiSTer

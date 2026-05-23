@@ -1,3 +1,5 @@
+// Copyright 2025 Dennis Michael Heine
+
 
 //  3-tap IIR filter for 2 channels. 
 //  Copyright (C) 2020 Sorgelig

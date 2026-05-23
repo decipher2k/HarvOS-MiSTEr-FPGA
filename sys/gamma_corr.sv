@@ -1,3 +1,5 @@
+// Copyright 2025 Dennis Michael Heine
+
 module gamma_corr
 (
 	input             clk_sys,

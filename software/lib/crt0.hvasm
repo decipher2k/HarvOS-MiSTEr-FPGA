@@ -1,0 +1,7 @@
+# Copyright 2025 Dennis Michael Heine
+
+_start:
+  ADDI sp, x0, 0
+  JAL ra, main
+halt:
+  JAL x0, halt

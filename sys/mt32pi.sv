@@ -1,3 +1,5 @@
+// Copyright 2025 Dennis Michael Heine
+
 //
 // Communication module to MT32-pi (external MIDI emulator on RPi)
 // (C) 2020 Sorgelig, Kitrinx

@@ -1,3 +1,5 @@
+// Copyright 2025 Dennis Michael Heine
+
 `timescale 1 ps / 1 ps
 module sysmem_lite
 (

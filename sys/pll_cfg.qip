@@ -1,3 +1,5 @@
+# Copyright 2025 Dennis Michael Heine
+
 set_global_assignment -name SYNTHESIS_ONLY_QIP ON
 set_global_assignment -library "pll_cfg" -name VERILOG_FILE [file join $::quartus(qip_path) "pll_cfg/pll_cfg.v"]
 set_global_assignment -library "pll_cfg" -name VERILOG_FILE [file join $::quartus(qip_path) "pll_cfg/pll_cfg_hdmi.v"]

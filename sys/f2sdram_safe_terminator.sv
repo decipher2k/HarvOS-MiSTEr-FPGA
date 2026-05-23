@@ -1,3 +1,5 @@
+// Copyright 2025 Dennis Michael Heine
+
 // ============================================================================
 //
 //                f2sdram_safe_terminator for MiSTer platform

@@ -1,0 +1,131 @@
+{
+  "blockers": [],
+  "checks": {
+    "ascii": {
+      "bad_files": [],
+      "ok": true
+    },
+    "external_tools": {
+      "ok": true,
+      "tools": {
+        "quartus_map": true,
+        "quartus_sh": true,
+        "sby": true,
+        "verilator": true,
+        "yosys": true
+      }
+    },
+    "formal": {
+      "cmd": [
+        "sby",
+        "-f",
+        "harvos_core.sby"
+      ],
+      "cwd": "formal",
+      "ok": true,
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "SBY  0:48:46 [harvos_core] Removing directory 'C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\formal\\harvos_core'.\nSBY  0:48:46 [harvos_core] Copy 'C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\formal\\..\\rtl\\harvos_pkg.sv' to 'C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\formal\\harvos_core\\src\\harvos_pkg.sv'.\nSBY  0:48:46 [harvos_core] Copy 'C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\formal\\..\\rtl\\harvos_pagetable.sv' to 'C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\formal\\harvos_core\\src\\harvos_pagetable.sv'.\nSBY  0:48:46 [harvos_core] Copy 'C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\formal\\..\\rtl\\harvos_tlb.sv' to 'C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\formal\\harvos_core\\src\\harvos_tlb.sv'.\nSBY  0:48:46 [harvos_core] Copy 'C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\formal\\..\\rtl\\harvos_mmu.sv' to 'C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\formal\\harvos_core\\src\\harvos_mmu.sv'.\nSBY  0:48:46 [harvos_core] Copy 'C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\formal\\..\\rtl\\harvos_mpu.sv' to 'C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\formal\\harvos_core\\src\\harvos_mpu.sv'.\nSBY  0:48:46 [harvos_core] Copy 'C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\formal\\..\\rtl\\harvos_assertions.sv' to 'C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\formal\\harvos_core\\src\\harvos_assertions.sv'.\nSBY  0:48:46 [harvos_core] engine_0: smtbmc\nSBY  0:48:46 [harvos_core] base: starting process \"cd harvos_core/src& yosys -ql ../model/design.log ../model/design.ys\"\nSBY  0:48:46 [harvos_core] base: Warning: Encountered `translate_off' comment! Such legacy hot comments are supported by Yosys, but are not part of any formal language specification. Using a portable and standards-compliant construct such as `ifdef is recommended!\nSBY  0:48:46 [harvos_core] base: finished (returncode=0)\nSBY  0:48:46 [harvos_core] prep: starting process \"cd harvos_core/model& yosys -ql design_prep.log design_prep.ys\"\nSBY  0:48:46 [harvos_core] prep: finished (returncode=0)\nSBY  0:48:46 [harvos_core] smt2: starting process \"cd harvos_core/model& yosys -ql design_smt2.log design_smt2.ys\"\nSBY  0:48:46 [harvos_core] smt2: finished (returncode=0)\nSBY  0:48:46 [harvos_core] engine_0.basecase: starting process \"cd harvos_core& yosys-smtbmc --presat --unroll --noprogress -t 32  --append 0 --dump-vcd engine_0/trace.vcd --dump-yw engine_0/trace.yw --dump-vlogtb engine_0/trace_tb.v --dump-smtc engine_0/trace.smtc model/design_smt2.smt2\"\nSBY  0:48:46 [harvos_core] engine_0.induction: starting process \"cd harvos_core& yosys-smtbmc --presat --unroll -i --noprogress -t 32  --append 0 --dump-vcd engine_0/trace_induct.vcd --dump-yw engine_0/trace_induct.yw --dump-vlogtb engine_0/trace_induct_tb.v --dump-smtc engine_0/trace_induct.smtc model/design_smt2.smt2\"\nSBY  0:48:46 [harvos_core] engine_0.induction: ##   0:00:00  Solver: yices\nSBY  0:48:46 [harvos_core] engine_0.induction: ##   0:00:00  Trying induction in step 32..\nSBY  0:48:46 [harvos_core] engine_0.induction: ##   0:00:00  Temporal induction successful.\nSBY  0:48:46 [harvos_core] engine_0.induction: ##   0:00:00  Status: passed\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Solver: yices\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 0..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 0..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 1..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 1..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 2..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 2..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 3..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 3..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 4..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 4..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 5..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 5..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 6..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 6..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 7..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 7..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 8..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 8..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 9..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 9..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 10..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 10..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 11..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 11..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 12..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 12..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 13..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 13..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 14..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 14..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 15..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 15..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 16..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 16..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 17..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 17..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 18..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 18..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 19..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 19..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 20..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 20..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 21..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 21..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 22..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 22..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 23..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 23..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 24..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 24..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 25..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 25..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 26..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 26..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 27..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 27..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 28..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 28..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 29..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 29..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 30..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 30..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assumptions in step 31..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Checking assertions in step 31..\nSBY  0:48:47 [harvos_core] engine_0.basecase: ##   0:00:00  Status: passed\nSBY  0:48:47 [harvos_core] engine_0.basecase: finished (returncode=0)\nSBY  0:48:47 [harvos_core] engine_0.basecase: Status returned by engine for basecase: pass\nSBY  0:48:47 [harvos_core] engine_0.induction: finished (returncode=0)\nSBY  0:48:47 [harvos_core] engine_0.induction: Status returned by engine for induction: pass\nSBY  0:48:47 [harvos_core] summary: Elapsed clock time [H:MM:SS (secs)]: 0:00:00 (0)\nSBY  0:48:47 [harvos_core] summary: Elapsed process time unvailable on Windows\nSBY  0:48:47 [harvos_core] summary: engine_0 (smtbmc) returned pass for basecase\nSBY  0:48:47 [harvos_core] summary: engine_0 (smtbmc) returned pass for induction\nSBY  0:48:47 [harvos_core] summary: engine_0 did not produce any traces\nSBY  0:48:47 [harvos_core] summary: successful proof by k-induction.\nSBY  0:48:47 [harvos_core] DONE (PASS, rc=0)\n"
+    },
+    "hdl_balance": {
+      "bad_files": [],
+      "ok": true
+    },
+    "production_image": {
+      "cmd": [
+        "C:\\Users\\dennis\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "tools/harvos_image.py",
+        "--rom",
+        "tests\\boot_demo.hex",
+        "--services",
+        "software\\services\\service_manifest.json",
+        "-o",
+        "release\\harvos_boot_image.json",
+        "--production",
+        "--key-file",
+        "C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\release\\local-production.key"
+      ],
+      "cwd": ".",
+      "ok": true,
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "image=release\\harvos_boot_image.json words=34 sha256=d7db78bba079b3a9d90d435adc501c32b81a79e062c202ee3351f2f731f3bf90\n"
+    },
+    "production_image_verify": {
+      "cmd": [
+        "C:\\Users\\dennis\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "tools/harvos_image.py",
+        "--rom",
+        "tests\\boot_demo.hex",
+        "--services",
+        "software\\services\\service_manifest.json",
+        "--verify",
+        "release\\harvos_boot_image.json",
+        "--production",
+        "--key-file",
+        "C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\release\\local-production.key"
+      ],
+      "cwd": ".",
+      "ok": true,
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "verify=release\\harvos_boot_image.json ok=1\n"
+    },
+    "python_compile": {
+      "cmd": [
+        "C:\\Users\\dennis\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-m",
+        "py_compile",
+        "tools/harvos_asm.py",
+        "tools/harvos_iss.py",
+        "tools/harvos_image.py",
+        "tools/make_boot_image_rom.py",
+        "tools/harvos_prod_check.py",
+        "tests/run_all.py",
+        "tests/kernel_model_smoke.py",
+        "tests/service_model_smoke.py"
+      ],
+      "cwd": ".",
+      "ok": true,
+      "returncode": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    "quartus_timing": {
+      "flow_success": true,
+      "missing": [],
+      "ok": true,
+      "rbf_bytes": 3896508,
+      "slack_violations": []
+    },
+    "reference_tests": {
+      "cmd": [
+        "C:\\Users\\dennis\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "tests/run_all.py"
+      ],
+      "cwd": ".",
+      "ok": true,
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "pc=0x0000007c trap=0 scause=0x00000000\nx5=0x0000000c x6=0x00000000 x7=0x00000012\nmem[0x00000000]=0x0000000c\nmem[0x00000004]=0x1aceb00c\nmem[0x00000008]=0x00000012\nmem[0x00000010]=0x00000000\nmem[0x00000014]=0x00000000\nmem[0x00000018]=0x00000000\nmem[0x0000001c]=0x00000000\nimage=C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\tests\\boot_image.json words=34 sha256=d7db78bba079b3a9d90d435adc501c32b81a79e062c202ee3351f2f731f3bf90\nverify=C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\tests\\boot_image.json ok=1\nkernel policy smoke passed\nservice model smoke passed\nHarvOS reference checks passed\n"
+    },
+    "riscv_services": {
+      "cmd": [
+        "powershell",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/build_services.ps1",
+        "-ToolchainRoot",
+        "C:\\SysGCC\\risc-v"
+      ],
+      "cwd": ".",
+      "ok": true,
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "services_archive=C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\build\\services\\libharvos_services.a objects=3\n"
+    }
+  },
+  "production_ready": true
+}

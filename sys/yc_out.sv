@@ -1,3 +1,5 @@
+// Copyright 2025 Dennis Michael Heine
+
 //============================================================================
 // 	YC - Luma / Chroma Generation 
 //  Copyright (C) 2022 Mike Simone

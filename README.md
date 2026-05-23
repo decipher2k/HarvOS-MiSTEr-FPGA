@@ -1,166 +1,51 @@
-# HarvOS Core (RV32I S-mode CPU)
+<!-- Copyright 2025 Dennis Michael Heine -->
 
-HarvOS is a minimal open-source RISC-V RV32I core with Supervisor-mode (S-mode) support,
-Sv32 virtual memory, MPU enforcement (NX, W^X, Harvard split), and simple caches.  
-It is designed for educational and research use.
+# Template core for MiSTer
 
-## Features
-- **ISA:** RV32I base integer (no M/A/C extensions yet)
-- **Privilege:** Machine (M), Supervisor (S), User (U)
-- **Virtual memory:** Sv32 MMU + page table walker
-- **MMU permissions:** `SUM` (S-mode may access U pages) and `MXR` (exec-only readable in S-mode) respected
-- **MPU:** Harvard separation, NX + W^X enforcement
-- **Caches:** 
-  - I$ direct-mapped, 32-byte lines, execute-only, lockable
-  - D$ 2-way, 32-byte lines, write-through, early restart
-- **Interrupts:** SSIP, STIP (timer), SEIP (external), prioritized
-- **Timer:** 64-bit counter + compare (`stime`, `stimecmp`)
-- **CSRs:** Full Supervisor CSR subset (sstatus, stvec, sepc, scause, stval, satp, sie, sip, stimecmp, etc.)
-- **Traps & Exceptions:** Illegal instruction, misaligned access, ecall/ebreak, page/MPU faults
+## General description
+This core contains the latest version of framework and will be updated when framework is updated. There will be no releases. This core is only for developers. Besides the framework, core demonstrates the basic usage. New or ported cores should use it as a template.
 
-## 📘 ISA Support
+It's highly recommended to follow the notes to keep it standardized for easier maintenance and collaboration with other developers.
 
-HarvOS implements a **subset of the RISC-V Privileged Architecture v1.12**:  
+## Source structure
 
-### Implemented
-- **Base ISA**:  
-  - RV32I (32-bit base integer)  
-  - All load/store, arithmetic, logical, branch, jump, system instructions  
-- **System / CSRs**:  
-  - **sstatus** (SIE bit only, others hardwired 0)  
-  - **stvec, sepc, scause, stval**  
-  - **satp** (Sv32 mode)  
-  - **sie, sip** (supervisor interrupt enable/pending)  
-  - **stime, stimecmp** (timer)  
-  - **sscratch** (general use scratch reg)  
-  - **FENCE, FENCE.I** (FENCE.I flushes I-cache, FENCE is a no-op)  
-  - **ECALL, EBREAK** (trap to supervisor)  
+### Legend:
+* `<core_name>` - you have to use the same name where you see this in this manual. Basically it's your core name.
 
-### Not Implemented
-- **Extensions**:  
-  - RV32M (mul/div)  
-  - RV32A (atomics)  
-  - RV32C (compressed)  
-  - Any 64-bit extensions (RV64*)  
-- **Other CSRs**:  
-  - PMP CSRs (not implemented; MPU handled separately)  
-  - All debug CSRs (dcsr, etc.)  
-  - Unused fields in sstatus are hardwired 0  
-- **Unaligned access**:  
-  - Traps on misaligned load/store/fetch  
+### Standard MiSTer core should have following folders:
+* `sys` - the framework. Basically it's prohibited to change any files in this folder. Framework updates may erase any customization in this folder. All MiSTer cores have to include sys folder as is from this core.
+* `rtl` - the actual source of core. It's up to the developer how to organize the inner structure of this folder. Exception is pll folder/files (see below).
+* `releases` - the folder where rbf files should be placed. format of each rbf is: <core_name>_YYYYMMDD.rbf (YYYYMMDD is date code of release).
 
-### 🔒 Privilege, Traps & Memory Permissions — Summary
+### Other standard files:
+* `<core_name>.qpf`- quartus project file. Copy it as is and then modify the line `PROJECT_REVISION = "<core_name>"` according to your core name.
+* `<core_name>.qsf` - quartus settings file. In most cases you don't need to modify anything inside (although you may wont to adjust some settings in quartus - this is fine, but keep changes minimal). You also need to watch this file before you make a commit. Quartus in some conditions may "spit" all settings from different files into this file so it will become large. If you see this, then simply revert it to original file.
+* `<core_name>.srf` - optional file to disable some warnings which are safe to disable and make message list more clean, so you will have less chance to miss some important warnings. You are free to modify it.
+* `<core_name>.sdc` - optional file for constraints in case if core require some special constraints. You are free to modify it.
+* `<core_name>.sv` - glue logic between framework and core. This is where you adapt core specific signals to framework.
+* `files.qip` - list of all core files. You need to edit it manually to add/remove files. Quartus will use this file but can't edit it. If you add files in Quartus IDE, then they will be added to `<core_name>.qsf` which is recommended manually move them to `files.qip`.
+* `clean.bat` - windows batch file to clean the whole project from temporary files. In most cases you don't need to modify it.
+* `.gitignore` - list of files should be ignored by git, so temporary files wont be included in commits.
+* `jtag.cdf` - it will be produced when you compile the core. By clicking it in Quartus IDE, you will launch programmer where you can send the core to MiSTer over USB blaster cable (see manual for DE10-nano how to connect it). This file normally is not present on cleaned project and not included in commits.
 
-### Privilege levels
-- **M-mode**: reset state, owns `mstatus/mie/mip/mtvec/medeleg/mideleg/mepc/mcause/mtval`.
-- **S-mode**: OS kernel; uses `sstatus/sie/sip/stvec/sepc/scause/stval/satp`.
-- **U-mode**: applications; traps to S (delegated) or M (non-delegated).
+### PLL:
+Framework implies use of at least one PLL in the core. Framework doesn't contain this PLL but requires it to be placed in `rtl` folder, so `pll` folder and `pll.v`, `pll.qip` files must be present, however PLL settings are up to the core.
 
-### Trap entry & return
-- **ECALL cause**: U=8, S=9, M=11. **EBREAK** always to M.
-- **Delegation**: If `medeleg[cause]=1` and trap originates in U/S, trap targets **S**; else **M**. Interrupts obey `mideleg` (SSIP/STIP/SEIP → S when delegated).
-- **Vectors**: M traps → `mtvec` (base); S traps → `stvec` (base). (Vectored mode reserved for future.)
-- **Returns**:
-  - `MRET`: `priv ← MPP`; `MIE←MPIE`, `MPIE←1`, `MPP←U` (00); `pc ← mepc`.
-  - `SRET`: `priv ← (SPP?S:U)`; `SIE←SPIE`, `SPIE←1`, `SPP←0`; `pc ← sepc`.
+### Verilog Macros
 
-### MMU permissions (Sv32) with SUM/MXR
-- **Instruction fetch**: requires `X=1`. `SUM` does **not** affect fetch.
-- **Data access in U**: page must have `U=1` and `R/W` per op; MXR has no effect in U.
-- **Data access in S**:
-  - Access to U-pages requires **`SUM=1`**, else fault.
-  - **Loads**: allowed when `R=1`, or when `X=1` **and** `MXR=1` (make-exec-readable).
-  - **Stores**: require `W=1` (MXR does not grant store).
+The following macros can be defined and will affect the framework features:
 
-### Additional system instructions
-- **`FENCE.I`**: flushes I-cache (already implemented).
-- **`SFENCE.VMA`**: flushes TLB (entirely; ASID/VA variants reserved for future).
-- **`WFI`**: implemented as a hint no-op.
+Macro                    |   Effect
+-------------------------|---------------------------------
+MISTER_DEBUG_NOHDMI      | Disable HDMI-related modules. Speeds up compilation but only analogue/direct video is available
+MISTER_DUAL_SDRAM        | Changes configuration of FPGA pins to work with dual SDRAM I/O boards
+MISTER_FB                | Allows to use framebuffer from the core
+MISTER_SMALL_VBUF        | Sets a smaller video buffer for the ASCAL
+MISTER_DOWNSCALE_NN      | Ascal's downscale mode
+MISTER_DISABLE_ADAPTIVE  | Disables adaptive scan lines
+MISTER_FB_PALETTE        | Framebuffer palette
 
 
-## Exceptions & Interrupts
+# Quartus version
+Cores must be developed in **Quartus v17.0.x**. It's recommended to have updates, so it will be **v17.0.2**. Newer versions won't give any benefits to FPGA used in MiSTer, however they will introduce incompatibilities in project settings and it will make harder to maintain the core and collaborate with others. **So please stick to good old 17.0.x version.** You may use either Lite or Standard license.
 
-## ✅ RV32I Instruction Coverage
-
-| Category          | Instructions                              | HarvOS |
-|-------------------|-------------------------------------------|--------|
-| **Integer Reg-Imm** | LUI, AUIPC                                | ✔ |
-|                   | ADDI, SLTI, SLTIU, ANDI, ORI, XORI        | ✔ |
-|                   | SLLI, SRLI, SRAI                          | ✔ |
-| **Integer Reg-Reg** | ADD, SUB, SLT, SLTU, AND, OR, XOR         | ✔ |
-|                   | SLL, SRL, SRA                             | ✔ |
-| **Branches**      | BEQ, BNE, BLT, BGE, BLTU, BGEU            | ✔ |
-| **Jumps**         | JAL, JALR                                 | ✔ |
-| **Loads**         | LB, LH, LW, LBU, LHU                      | ✔ (misaligned traps) |
-| **Stores**        | SB, SH, SW                                | ✔ (misaligned traps) |
-| **Memory Ordering** | FENCE, FENCE.I                          | ✔ (FENCE=NOP, FENCE.I flushes I$) |
-| **System**        | ECALL, EBREAK                             | ✔ (trap to S-mode) |
-|                   | CSRRW, CSRRS, CSRRC, CSR*I variants       | ✔ (only supported CSRs) |
-|                   | Privileged CSRs (see list above)          | ✔ |
-| **Unsupported**   | MUL/DIV (RV32M), Atomics (A), Compressed (C) | ✘ |
-
-### Notes
-- **Misaligned**: LW/LH/SW/SH to non-aligned addresses trap. No hardware realignment.  
-- **CSR writes**: Unsupported/RO CSRs trap as *illegal instruction*.  
-- **FENCE.I**: flushes I$, synchronous.  
-
-- **Traps / Exceptions**:  
-  - Illegal instruction  
-  - Misaligned instruction address  
-  - Misaligned load/store address  
-  - Page fault (instruction/data load/store)  
-  - Breakpoint (EBREAK)  
-  - Environment call (ECALL from S-mode)  
-- **Interrupts**:  
-  - Supervisor software interrupt (SSIP)  
-  - Supervisor timer interrupt (STIP)  
-  - Supervisor external interrupt (SEIP)  
-  - Prioritized in the order SEIP > STIP > SSIP  
-
-
-## Status
-
-### New in this release
-- Added **Machine (M)** and **User (U)** modes, incl. machine CSRs and **`MRET`/`SRET`**.
-- Implemented **SUM/MXR** behavior in the Sv32 MMU.
-- **Interrupts**: delegation via `mideleg` and exception delegation via `medeleg`; priorities E > T > S.
-- **`SFENCE.VMA`** (TLB flush) and **`WFI`** (hint) supported.
-
-## Status
-✅ Runs testbenches with page faults, interrupts, caches  
-✅ RV32I instruction set implemented  
-✅ Compliance-ready (passes directed tests; rv32ui/rv32si still to be run)  
-
-Not included:
-- No RV32M/A/C extensions
-- No peripherals beyond timer/irq stub
-
-## Getting Started
-Synthesize using Intel Quarkus Prime
-
-### 🎓 Educational Use
-
-HarvOS is designed as a **teaching and research platform** to illustrate:  
-- RISC-V RV32I instruction set and supervisor-mode CSRs  
-- Sv32 virtual memory and page table walking  
-- Memory protection (NX, W^X)  
-- Harvard architecture with separate I$ / D$  
-- Trap/interrupt handling flow  
-
-⚠️ **Not deterministic**: Because HarvOS uses caches, a page table walker, and asynchronous interrupts, instruction timing is not guaranteed cycle-by-cycle.  
-It should **not** be used for real-time or safety-critical applications.  
-
-For predictable cycle timing (e.g. classroom demos), you can configure the core to run in a simplified mode:  
-- Disable caches (force uncached access)  
-- Mask interrupts (`sie = 0`)  
-- Use static page mappings (no PTW misses)  
-
-## License
-Apache 2.0 with Solderpad hardware license supplement (see LICENSE).
-
-## AI Notice
-HarvOS has been created using ChatGPT 5
-
-## Trademark Notice
-“RISC-V” and the RISC-V logos are trademarks of RISC-V International.  
-This project is not affiliated with or endorsed by RISC-V International.

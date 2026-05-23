@@ -1,0 +1,25 @@
+{
+  "services": [
+    {
+      "name": "init",
+      "caps": ["MEM_MAP", "IPC_SEND", "IPC_RECV"],
+      "immutable": true
+    },
+    {
+      "name": "netd",
+      "caps": ["IPC_SEND", "IPC_RECV", "DMA"],
+      "immutable": true
+    },
+    {
+      "name": "storaged",
+      "caps": ["IPC_SEND", "IPC_RECV", "DMA"],
+      "immutable": true
+    }
+  ],
+  "policy": {
+    "wx": "deny",
+    "user_exec_writable": "deny",
+    "mmio_user": "deny",
+    "dma": "bounce-buffer-only"
+  }
+}

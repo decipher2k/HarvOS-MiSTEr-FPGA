@@ -1,3 +1,5 @@
+// Copyright 2025 Dennis Michael Heine
+
 //
 //  video freeze with sync
 //  (C) Alexey Melnikov

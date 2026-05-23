@@ -1,0 +1,47 @@
+{
+  "format": "HarvOS-image-v2",
+  "image_sha256": "d7db78bba079b3a9d90d435adc501c32b81a79e062c202ee3351f2f731f3bf90",
+  "production": false,
+  "rom_sha256": "276fff81db32ffb4396256bb097e90afcd98f4ece4cee845bdc6a762b20467c7",
+  "rom_words": 34,
+  "services": {
+    "policy": {
+      "dma": "bounce-buffer-only",
+      "mmio_user": "deny",
+      "user_exec_writable": "deny",
+      "wx": "deny"
+    },
+    "services": [
+      {
+        "caps": [
+          "MEM_MAP",
+          "IPC_SEND",
+          "IPC_RECV"
+        ],
+        "immutable": true,
+        "name": "init"
+      },
+      {
+        "caps": [
+          "IPC_SEND",
+          "IPC_RECV",
+          "DMA"
+        ],
+        "immutable": true,
+        "name": "netd"
+      },
+      {
+        "caps": [
+          "IPC_SEND",
+          "IPC_RECV",
+          "DMA"
+        ],
+        "immutable": true,
+        "name": "storaged"
+      }
+    ]
+  },
+  "services_sha256": "9a76b417f106a5967af3b8ec4cf86acff08c26bac49e1b3d2c28eb70937bd98d",
+  "signature": "3b9a723326068126792e703ad7469b9f9c1b43ff5911e55f2ccb30b1bc7d6083",
+  "signature_scheme": "HMAC-SHA256"
+}

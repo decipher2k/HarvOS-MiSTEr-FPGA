@@ -1,0 +1,24 @@
+{
+  "product": "HarvOS MiSTer Core",
+  "release_profile": "production",
+  "required_external_tools": [
+    "quartus_sh",
+    "quartus_map",
+    "verilator",
+    "sby",
+    "yosys"
+  ],
+  "security_gates": {
+    "default_dev_key_allowed": false,
+    "image_signature_required": true,
+    "wx_policy_required": "deny",
+    "dma_policy_required": "bounce-buffer-only",
+    "formal_required": true,
+    "fpga_timing_required": true
+  },
+  "artifacts": {
+    "boot_hex": "tests/boot_demo.hex",
+    "boot_image": "release/harvos_boot_image.json",
+    "production_report": "release/production_report.json"
+  }
+}

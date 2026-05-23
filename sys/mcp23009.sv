@@ -1,3 +1,5 @@
+// Copyright 2025 Dennis Michael Heine
+
 //
 // MCP23009
 // (C) 2019 Alexey Melnikov

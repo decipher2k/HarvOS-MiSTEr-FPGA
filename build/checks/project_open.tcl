@@ -1,0 +1,2 @@
+project_open Template
+project_close

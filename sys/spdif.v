@@ -1,3 +1,5 @@
+// Copyright 2025 Dennis Michael Heine
+
 //-----------------------------------------------------------------
 //                        SPDIF Transmitter
 //                              V0.1
