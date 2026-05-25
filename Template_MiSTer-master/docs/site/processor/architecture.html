@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarvOS Prozessor - Architektur</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">HarvOS Prozessor</div>
+      <nav class="topnav">
+        <a href="../index.html">Start</a>
+        <a href="index.html">Prozessor</a>
+        <a href="isa.html">ISL</a>
+        <a href="../harvttp/index.html">HarvTTP</a>
+      </nav>
+    </div>
+  </header>
+  <main class="layout">
+    <aside class="side">
+      <h2>Prozessor</h2>
+      <a href="index.html">Uebersicht</a>
+      <a href="architecture.html">Architektur</a>
+      <a href="isa.html">ISL / ISA</a>
+      <a href="memory.html">Speicher</a>
+      <a href="boot.html">Boot-ROM</a>
+      <a href="mmio.html">MMIO</a>
+      <a href="security.html">Security</a>
+    </aside>
+    <article class="doc">
+      <div class="hero">
+        <h1>Architekturbeschreibung</h1>
+        <p>
+          HarvOS ist als kleines, beobachtbares SoC fuer Boot- und Runtime-Experimente
+          aufgebaut. Der Kernpunkt ist eine harte Trennung zwischen Instruktionspfad
+          und Datenpfad, damit ELF-Code in IMEM geladen und danach hardwareseitig
+          gesperrt werden kann.
+        </p>
+      </div>
+
+      <section class="schema">
+        <img src="../assets/harvos-architecture.svg" alt="HarvOS Systemaufbau">
+      </section>
+
+      <section>
+        <h2>CPU-internes Schema</h2>
+        <div class="schema">
+          <img src="../assets/harvos-cpu-architecture.svg" alt="HarvOS CPU Architektur mit Boot-ROM, MMU, MPU, Harvard-Trennung und immutable IMEM">
+        </div>
+      </section>
+
+      <section>
+        <h2>SoC-Bl&ouml;cke</h2>
+        <table>
+          <tr><th>Block</th><th>Funktion</th><th>Implementierungsstand</th></tr>
+          <tr>
+            <td><code>harvos_cpu</code></td>
+            <td>RV32I-nahe 32-Bit CPU mit lokalen CSRs, HarvOS-MMU/MPU, Traps, Fetch- und Datenpfad; nicht als vollstaendig normkonformer RISC-V-Core beansprucht.</td>
+            <td>RTL-implementiert und in Verilator-Tests verwendet.</td>
+          </tr>
+          <tr>
+            <td><code>harvos_soc</code></td>
+            <td>Top-Level-Integration mit zwei CPU-Harts, IMEM, DMEM, MMIO, DMA-IOMMU, Secure Boot, USB, HNET und HPS-Block.</td>
+            <td>RTL-implementiert; Testpfad nutzt Images und Npcap/TAP.</td>
+          </tr>
+          <tr>
+            <td><code>harvos_smp_bus2</code></td>
+            <td>Arbitrierter gemeinsamer Datenbus fuer beide CPU-Harts.</td>
+            <td>Aktiv fuer DMEM/MMIO-Zugriffe.</td>
+          </tr>
+          <tr>
+            <td><code>harvos_mmu</code></td>
+            <td>Virtuell-nach-physisch-Pruefung mit PTE-Flags und W^X-Pruefung.</td>
+            <td>Separate Instanzen fuer Fetch und Data.</td>
+          </tr>
+          <tr>
+            <td><code>harvos_mpu</code></td>
+            <td>Feste physische Zugriffspolitik fuer I-ROM/IMEM, D-RAM, MMIO und Lock-Zustand; keine RISC-V-PMP-Implementierung.</td>
+            <td>Erzwingt Harvard-Regeln und Zugriffsfehler.</td>
+          </tr>
+          <tr>
+            <td><code>harvos_imem_loader_mmio</code></td>
+            <td>Einziger legitimer Schreibpfad in den Instruktionsspeicher waehrend des Bootens.</td>
+            <td>Nach <code>LOCK</code> keine weiteren IMEM-Writes bis Reset.</td>
+          </tr>
+          <tr>
+            <td><code>harvos_net_mmio</code></td>
+            <td>Packet-DMA-Netzwerkkarte fuer HarvTTP und Testsuite.</td>
+            <td>RX/TX, IRQ, Link-Status, DMA-Fenster.</td>
+          </tr>
+          <tr>
+            <td><code>harvos_usb_host_mmio</code></td>
+            <td>USB-Host-MMIO mit DMA, UTMI/DPDM-Signalen, Port-Power, Retry/NAK/STALL-Status.</td>
+            <td>RTL-seitig integriert; Mass-Storage-Stack laeuft auf Softwareseite.</td>
+          </tr>
+          <tr>
+            <td><code>harvos_mister_hps_block</code></td>
+            <td>MiSTer/HPS-kompatibler Blockzugriff auf zwei Images.</td>
+            <td>Aktueller Boot-ROM-Testpfad fuer Programm- und Daten-USB-Images.</td>
+          </tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>CPU-Mikroarchitektur</h2>
+        <p>
+          Die CPU ist keine superskalare oder out-of-order Pipeline, sondern eine
+          deterministische Mehrzyklusmaschine. Jede Instruktion durchlaeuft Fetch,
+          Decode, Execute und je nach Typ Memory/Writeback. Das ist fuer Boot-ROM,
+          Low-Level-Tests und klare Hardwaredebugbarkeit passend.
+        </p>
+        <table>
+          <tr><th>Zustand</th><th>Aufgabe</th></tr>
+          <tr><td><code>ST_FETCH</code></td><td>PC pruefen, Interrupts/Traps erkennen, Fetch-MMU/MPU anwenden, Instruktionswort lesen.</td></tr>
+          <tr><td><code>ST_DECODE</code></td><td>Registerquellen und Zielregister decodieren.</td></tr>
+          <tr><td><code>ST_EXEC</code></td><td>ALU, Branch, Jump, CSR, System, Custom-0 und Adressberechnung.</td></tr>
+          <tr><td><code>ST_MEM</code></td><td>Daten-MMU/MPU, Byte-Lanes, Load/Store, MMIO-Zugriff.</td></tr>
+          <tr><td><code>ST_WB</code></td><td>Rueckschreiben nach <code>rd</code>, PC-Fortschritt.</td></tr>
+          <tr><td><code>ST_CLRMEM</code></td><td>Privilegiertes blockweises Nullsetzen von Speicher ueber Custom-0.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Harvard-Trennung</h2>
+        <p>
+          Die Architektur trennt den Instruktionsspeicher vom Datenspeicher. Der
+          normale Datenpfad kann nicht direkt in IMEM schreiben. Ausfuehrbarer
+          ELF-Code wird ausschliesslich vom Boot-ROM ueber den IMEM-Loader geladen.
+          Danach setzt das Boot-ROM den Lock-Befehl. Ein laufender Server kann dann
+          Daten, BSS, Stack und MMIO verwenden, aber keine Instruktionen nachladen
+          oder veraendern.
+        </p>
+        <div class="note">
+          Diese Trennung ist absichtlich nicht aufgehoben. Webinhalte, Startparameter
+          und HTTP-Bundles liegen in DMEM. Ausfuehrbare Segmente liegen in IMEM.
+        </div>
+      </section>
+
+      <section>
+        <h2>Aktueller Boot- und Runtime-Schnitt</h2>
+        <ol>
+          <li>Das SoC initialisiert IMEM per <code>$readmemh</code> oder Default-ROM.</li>
+          <li>Secure Boot gibt <code>boot_ok</code> frei; bei Fehler bleibt die CPU im Resetpfad.</li>
+          <li>Das Boot-ROM erkennt zwei Images, mountet sie und sucht gueltige ELF/YAML/Data-Paare.</li>
+          <li>ELF-Textsegmente werden per IMEM-Loader geschrieben; Datensegmente gehen in DMEM.</li>
+          <li>Das Boot-ROM baut Startparameter und optional ein HarvTTP-HTTP-Bundle.</li>
+          <li>IMEM wird gelockt und die CPU springt zum ELF-Einstieg.</li>
+          <li>HarvTTP nutzt HNET-MMIO und die vorab geladenen Assets.</li>
+        </ol>
+      </section>
+
+      <div class="footer-nav">
+        <a href="index.html">Zurueck: Uebersicht</a>
+        <a href="isa.html">Weiter: ISL</a>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

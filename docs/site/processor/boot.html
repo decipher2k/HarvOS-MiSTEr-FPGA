@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarvOS Prozessor - Boot-ROM und ELF-Loader</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">HarvOS Boot-ROM</div>
+      <nav class="topnav">
+        <a href="../index.html">Start</a>
+        <a href="index.html">Prozessor</a>
+        <a href="mmio.html">MMIO</a>
+        <a href="../harvttp/setup.html">HarvTTP Setup</a>
+      </nav>
+    </div>
+  </header>
+  <main class="layout">
+    <aside class="side">
+      <h2>Prozessor</h2>
+      <a href="index.html">Uebersicht</a>
+      <a href="architecture.html">Architektur</a>
+      <a href="isa.html">ISL / ISA</a>
+      <a href="memory.html">Speicher</a>
+      <a href="boot.html">Boot-ROM</a>
+      <a href="mmio.html">MMIO</a>
+      <a href="security.html">Security</a>
+    </aside>
+    <article class="doc">
+      <div class="hero">
+        <h1>Boot-ROM und ELF-Loader</h1>
+        <p>
+          Das Boot-ROM erkennt zwei Blockdevices, mountet deren Dateisysteme,
+          ordnet ELF, YAML und Datenordner zu, laedt gueltige ELF32-Images in
+          IMEM/DMEM und uebergibt danach kontrolliert an die Anwendung.
+        </p>
+      </div>
+
+      <section>
+        <h2>Bootsequenz</h2>
+        <ol>
+          <li>Reset: Das SoC initialisiert IMEM, DMEM und Geraete. Hart 0 startet bei <code>0x00000000</code>.</li>
+          <li>Secure Boot setzt <code>boot_ok</code> und <code>mpu_lock</code>, sofern Hash/Signaturwerte stimmen.</li>
+          <li>Boot-ROM initialisiert den HPS-Block-Adapter bei <code>0xffff00c0</code>.</li>
+          <li>Beide Images werden als Blockdevices behandelt und per FAT/exFAT-Abstraktion gemountet.</li>
+          <li>Das Programmlaufwerk wird anhand von <code>*.elf</code> im Root erkannt.</li>
+          <li>Das Datenlaufwerk wird anhand des Verzeichnisses <code>/data</code> erkannt.</li>
+          <li>Das Boot-ROM sucht die erste gueltige App: <code>/name.elf</code>, <code>/config/name.yaml</code>, <code>/data/name</code>.</li>
+          <li>Die YAML-Datei wird geparst und in eine interne App-Konfiguration uebersetzt.</li>
+          <li>ELF-Header und Program Header werden validiert.</li>
+          <li>Ausfuehrbare Segmente werden via IMEM-Loader geschrieben; Datensegmente und BSS gehen in DMEM.</li>
+          <li>Startparameter und optionales HarvTTP-Bundle werden in DMEM platziert.</li>
+          <li>Der IMEM-Loader wird gelockt.</li>
+          <li>Das Boot-ROM setzt <code>a0 = params_addr</code>, setzt <code>sp</code> und springt zum ELF-Entry.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>USB-Image-Struktur</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Programm-USB</h3>
+            <pre><code>/
+  harvttp.elf
+  config/
+    harvttp.yaml
+  confg/
+    harvttp/
+      httproot/
+        index.html
+        about.html
+        style.css
+        app.js
+        img/
+          logo.svg</code></pre>
+          </div>
+          <div class="card">
+            <h3>Daten-USB</h3>
+            <pre><code>/
+  data/
+    harvttp/
+      logs/
+      state/
+      uploads/</code></pre>
+          </div>
+        </div>
+        <div class="warning">
+          Das HarvTTP-Webroot liegt im aktuellen Projekt absichtlich unter
+          <code>/confg/harvttp/httproot</code>. Der Pfad ist so im Boot-ROM und
+          in den Startparametern dokumentiert. Ein spaeterer ABI-Bruch sollte ihn
+          auf <code>/config/harvttp/httproot</code> migrieren.
+        </div>
+      </section>
+
+      <section>
+        <h2>ELF-Validierung</h2>
+        <table>
+          <tr><th>Pruefung</th><th>Regel</th></tr>
+          <tr><td>Magic</td><td><code>0x7f 'E' 'L' 'F'</code>.</td></tr>
+          <tr><td>Klasse/Datenformat</td><td><code>ELFCLASS32</code>, <code>ELFDATA2LSB</code>.</td></tr>
+          <tr><td>Typ/Maschine</td><td><code>ET_EXEC</code>, <code>EM_RISCV</code>.</td></tr>
+          <tr><td>Headergroessen</td><td><code>ehsize</code> und <code>phentsize</code> muessen zur Boot-ROM-Struktur passen.</td></tr>
+          <tr><td>Program Header</td><td><code>phnum &gt; 0</code> und maximal 16.</td></tr>
+          <tr><td>Segmentgrenzen</td><td><code>filesz &lt;= memsz</code>, keine Ueberlaeufe, Datei-Offsets im Image.</td></tr>
+          <tr><td>Alignment</td><td><code>vaddr</code> muss 4-Byte aligned sein.</td></tr>
+          <tr><td>W^X</td><td>Segmente mit gleichzeitig <code>PF_W</code> und <code>PF_X</code> werden abgelehnt.</td></tr>
+          <tr><td>Entry</td><td>Der Entry muss in einem ausfuehrbaren <code>PT_LOAD</code>-Segment liegen.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Ladeverhalten</h2>
+        <p>
+          <code>PT_LOAD</code>-Segmente mit <code>PF_X</code> werden als Code
+          behandelt. Das Boot-ROM liest sie stueckweise aus dem Dateisystem,
+          paddet auf Wortgrenzen und schreibt sie ueber die Register des
+          IMEM-Loaders in den Instruktionsspeicher. Nicht-ausfuehrbare Segmente
+          werden byteweise in DMEM kopiert. Wenn <code>memsz &gt; filesz</code>,
+          wird der Rest auf null gesetzt.
+        </p>
+        <pre><code>for each PT_LOAD phdr:
+  reject if phdr.flags has both PF_W and PF_X
+  if phdr.flags has PF_X:
+    write_exec_segment_via_imem_loader(phdr)
+  else:
+    copy_to_dmem(phdr.filesz)
+    zero_bss(phdr.memsz - phdr.filesz)</code></pre>
+      </section>
+
+      <section>
+        <h2>Fehlerverhalten</h2>
+        <p>
+          Boot-Fehler werden ueber ein Debugwort bei <code>0x00000420</code>
+          sichtbar gemacht. Statuswerte beginnen mit <code>0xB001....</code>;
+          Fehler werden als <code>0xBAD00000 | status</code> kodiert. Im aktuellen
+          Boot-ROM wird die erste gueltige App gestartet. Fuer einen echten
+          Multi-App-Produktionspfad sollte ein Supervisor geladen werden, der
+          mehrere ELF-Dateien isoliert und schedult.
+        </p>
+      </section>
+
+      <div class="footer-nav">
+        <a href="memory.html">Zurueck: Speicher</a>
+        <a href="mmio.html">Weiter: MMIO</a>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

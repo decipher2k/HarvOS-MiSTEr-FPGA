@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900" role="img" aria-labelledby="title desc">
+  <title id="title">HarvOS CPU Architektur</title>
+  <desc id="desc">Interne CPU-Architektur mit Fetch-Pfad, Datenpfad, MMU, MPU, Harvard-Trennung, Boot-ROM, IMEM-Loader und immutable IMEM-Lock.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#203a32"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#355a9a"/>
+    </marker>
+    <style>
+      .bg { fill: #f8faf9; }
+      .soc { fill: #ffffff; stroke: #aebfb6; stroke-width: 2.2; rx: 16; }
+      .cpu { fill: #eef4f1; stroke: #6d9186; stroke-width: 2.4; rx: 14; }
+      .ibox { fill: #eaf0ff; stroke: #6982b8; stroke-width: 2; rx: 8; }
+      .dbox { fill: #fff3d6; stroke: #c4912e; stroke-width: 2; rx: 8; }
+      .sbox { fill: #f2eaf7; stroke: #8c679d; stroke-width: 2; rx: 8; }
+      .gbox { fill: #edf7f2; stroke: #4f8f78; stroke-width: 2; rx: 8; }
+      .lockbox { fill: #dff5eb; stroke: #0b6b5b; stroke-width: 2.4; rx: 8; }
+      .title { fill: #16201c; font: 800 26px Segoe UI, Arial, sans-serif; }
+      .zone { fill: #183129; font: 700 21px Segoe UI, Arial, sans-serif; }
+      .label { fill: #16201c; font: 700 15px Segoe UI, Arial, sans-serif; }
+      .small { fill: #41544c; font: 13px Segoe UI, Arial, sans-serif; }
+      .tiny { fill: #41544c; font: 12px Consolas, monospace; }
+      .flow { stroke: #203a32; stroke-width: 2.4; fill: none; marker-end: url(#arrow); }
+      .iflow { stroke: #355a9a; stroke-width: 2.7; fill: none; marker-end: url(#arrow-blue); }
+      .dflow { stroke: #8a5b12; stroke-width: 2.7; fill: none; marker-end: url(#arrow); }
+      .ctrl { stroke: #6c5974; stroke-width: 2; fill: none; stroke-dasharray: 7 6; marker-end: url(#arrow); }
+      .barrier { stroke: #0b6b5b; stroke-width: 5; stroke-dasharray: 12 8; }
+      .muted-line { stroke: #a9b8b1; stroke-width: 2; fill: none; }
+      .lock { fill: #0b6b5b; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1280" height="900"/>
+  <text class="title" x="40" y="48">HarvOS CPU: Harvard-Core mit Boot-ROM-Load und immutable IMEM</text>
+
+  <rect class="soc" x="34" y="78" width="1212" height="784"/>
+  <text class="zone" x="58" y="114">SoC Boundary</text>
+
+  <rect class="cpu" x="80" y="146" width="640" height="560"/>
+  <text class="zone" x="108" y="184">harvos_cpu hart</text>
+
+  <rect class="ibox" x="104" y="216" width="152" height="74"/>
+  <text class="label" x="124" y="246">PC / Fetch FSM</text>
+  <text class="small" x="124" y="268">reset vector</text>
+  <text class="tiny" x="124" y="284">0x00000000</text>
+
+  <rect class="ibox" x="288" y="216" width="172" height="74"/>
+  <text class="label" x="308" y="246">Fetch MMU</text>
+  <text class="small" x="308" y="268">TLB: 32 entries</text>
+  <text class="small" x="308" y="284">PTE X / W^X</text>
+
+  <rect class="ibox" x="494" y="216" width="172" height="74"/>
+  <text class="label" x="514" y="246">Fetch MPU</text>
+  <text class="small" x="514" y="268">IMEM execute only</text>
+  <text class="small" x="514" y="284">fault on violation</text>
+
+  <rect class="gbox" x="104" y="330" width="156" height="88"/>
+  <text class="label" x="124" y="360">Decode</text>
+  <text class="small" x="124" y="382">opcode / funct</text>
+  <text class="small" x="124" y="400">rs1 rs2 rd</text>
+
+  <rect class="gbox" x="294" y="330" width="156" height="88"/>
+  <text class="label" x="314" y="360">Register File</text>
+  <text class="small" x="314" y="382">x0..x31</text>
+  <text class="small" x="314" y="400">x0 hardwired zero</text>
+
+  <rect class="gbox" x="484" y="330" width="182" height="88"/>
+  <text class="label" x="504" y="360">Execute / ALU</text>
+  <text class="small" x="504" y="382">RV32I subset</text>
+  <text class="small" x="504" y="400">custom-0 ops</text>
+
+  <rect class="dbox" x="104" y="464" width="174" height="88"/>
+  <text class="label" x="124" y="494">Load/Store Unit</text>
+  <text class="small" x="124" y="516">byte enables</text>
+  <text class="small" x="124" y="534">alignment traps</text>
+
+  <rect class="dbox" x="316" y="464" width="162" height="88"/>
+  <text class="label" x="336" y="494">Data MMU</text>
+  <text class="small" x="336" y="516">TLB: 64 entries</text>
+  <text class="small" x="336" y="534">R/W/U checks</text>
+
+  <rect class="dbox" x="514" y="464" width="152" height="88"/>
+  <text class="label" x="534" y="494">Data MPU</text>
+  <text class="small" x="534" y="516">DMEM / MMIO only</text>
+  <text class="small" x="534" y="534">no IMEM writes</text>
+
+  <rect class="sbox" x="104" y="598" width="174" height="72"/>
+  <text class="label" x="124" y="628">CSR / Trap</text>
+  <text class="small" x="124" y="650">sstatus stvec satp</text>
+
+  <rect class="sbox" x="316" y="598" width="162" height="72"/>
+  <text class="label" x="336" y="628">Interrupts</text>
+  <text class="small" x="336" y="650">USB/HNET external IRQ</text>
+
+  <rect class="sbox" x="514" y="598" width="152" height="72"/>
+  <text class="label" x="534" y="628">Entropy</text>
+  <text class="small" x="534" y="650">ENTROPY custom-0</text>
+
+  <line class="barrier" x1="752" y1="132" x2="752" y2="820"/>
+  <text class="label" x="770" y="156">hardware Harvard boundary</text>
+  <text class="small" x="770" y="176">CPU data path cannot directly write IMEM</text>
+
+  <rect class="ibox" x="812" y="184" width="178" height="104"/>
+  <text class="label" x="832" y="214">IMEM</text>
+  <text class="small" x="832" y="238">instruction memory</text>
+  <text class="small" x="832" y="260">fetch read port</text>
+  <text class="tiny" x="832" y="280">default 1 KiB</text>
+
+  <rect class="lockbox" x="1032" y="184" width="166" height="104"/>
+  <text class="label" x="1052" y="214">Immutable Lock</text>
+  <text class="small" x="1052" y="238">loader LOCK bit</text>
+  <text class="small" x="1052" y="260">cleared only by reset</text>
+  <rect class="lock" x="1152" y="218" width="28" height="24" rx="5"/>
+  <rect x="1159" y="204" width="14" height="20" rx="7" fill="none" stroke="#0b6b5b" stroke-width="4"/>
+
+  <rect class="dbox" x="812" y="356" width="178" height="112"/>
+  <text class="label" x="832" y="386">DMEM</text>
+  <text class="small" x="832" y="410">data, bss, stack</text>
+  <text class="small" x="832" y="432">start params</text>
+  <text class="tiny" x="832" y="454">base 0x00000400</text>
+  <text class="tiny" x="832" y="466">default 4 KiB</text>
+
+  <rect class="dbox" x="1032" y="356" width="166" height="112"/>
+  <text class="label" x="1052" y="386">DMA Window</text>
+  <text class="small" x="1052" y="410">USB/HNET buffers</text>
+  <text class="tiny" x="1052" y="432">0x00000500</text>
+  <text class="tiny" x="1052" y="450">2048 bytes</text>
+
+  <rect class="sbox" x="812" y="540" width="178" height="112"/>
+  <text class="label" x="832" y="570">IMEM Loader MMIO</text>
+  <text class="small" x="832" y="594">ADDR / DATA / CTRL</text>
+  <text class="tiny" x="832" y="616">0xffff0030</text>
+  <text class="small" x="832" y="636">dedicated write port</text>
+
+  <rect class="sbox" x="1032" y="540" width="166" height="112"/>
+  <text class="label" x="1052" y="570">Device MMIO</text>
+  <text class="small" x="1052" y="594">HNET 0xffff0040</text>
+  <text class="small" x="1052" y="616">USB  0xffff0080</text>
+  <text class="small" x="1052" y="638">HPS  0xffff00c0</text>
+
+  <rect class="lockbox" x="812" y="704" width="386" height="90"/>
+  <text class="label" x="832" y="734">Boot-ROM phase</text>
+  <text class="small" x="832" y="758">1. Boot-ROM executes from IMEM after reset</text>
+  <text class="small" x="832" y="778">2. Reads USB/HPS block devices via data MMIO</text>
+  <text class="small" x="832" y="798">3. Loads ELF .text through loader, then locks IMEM</text>
+
+  <path class="iflow" d="M 256 252 L 288 252"/>
+  <path class="iflow" d="M 460 252 L 494 252"/>
+  <path class="iflow" d="M 666 252 C 716 252 750 236 812 236"/>
+  <path class="iflow" d="M 812 258 C 676 306 426 300 182 330"/>
+  <path class="flow" d="M 260 374 L 294 374"/>
+  <path class="flow" d="M 450 374 L 484 374"/>
+  <path class="flow" d="M 575 418 C 535 446 488 464 278 506"/>
+  <path class="dflow" d="M 278 508 L 316 508"/>
+  <path class="dflow" d="M 478 508 L 514 508"/>
+  <path class="dflow" d="M 666 508 C 720 508 760 412 812 412"/>
+  <path class="dflow" d="M 666 528 C 746 536 780 584 812 596"/>
+  <path class="dflow" d="M 990 412 L 1032 412"/>
+  <path class="dflow" d="M 990 596 L 1032 596"/>
+  <path class="ctrl" d="M 191 598 C 210 558 204 552 190 552"/>
+  <path class="ctrl" d="M 397 598 C 440 574 490 574 590 552"/>
+  <path class="ctrl" d="M 590 598 C 590 574 588 552 588 552"/>
+  <path class="ctrl" d="M 900 652 C 898 690 908 704 920 704"/>
+  <path class="ctrl" d="M 900 540 C 910 470 922 340 902 288"/>
+  <path class="ctrl" d="M 990 236 L 1032 236"/>
+  <path class="ctrl" d="M 1115 288 C 1090 318 1060 332 946 356"/>
+
+  <text class="small" x="104" y="742">Instruction side: PC -> Fetch MMU -> Fetch MPU -> IMEM read</text>
+  <text class="small" x="104" y="766">Data side: LSU -> Data MMU -> Data MPU -> DMEM or MMIO</text>
+  <text class="small" x="104" y="790">Only Boot-ROM may populate executable memory, and only via IMEM Loader before LOCK.</text>
+  <text class="small" x="104" y="814">After LOCK, running applications cannot patch executable code; reboot is required for new IMEM contents.</text>
+</svg>

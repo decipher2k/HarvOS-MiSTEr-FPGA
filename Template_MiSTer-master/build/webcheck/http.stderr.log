@@ -1,0 +1,10 @@
+127.0.0.1 - - [24/May/2026 08:07:33] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [24/May/2026 08:07:33] "GET /about.html HTTP/1.1" 200 -
+127.0.0.1 - - [24/May/2026 08:07:33] "GET /assets/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/May/2026 08:07:33] "GET /assets/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/May/2026 08:07:33] "GET /assets/harvttp.svg HTTP/1.1" 200 -
+127.0.0.1 - - [24/May/2026 08:08:28] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [24/May/2026 08:08:28] "GET /assets/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/May/2026 08:08:28] "GET /assets/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/May/2026 08:08:28] "GET /assets/harvttp.svg HTTP/1.1" 200 -
+127.0.0.1 - - [24/May/2026 08:08:45] "GET /about.html HTTP/1.1" 200 -

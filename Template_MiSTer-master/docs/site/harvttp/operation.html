@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarvTTP - Funktionsweise</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">HarvTTP Funktionsweise</div>
+      <nav class="topnav">
+        <a href="../index.html">Start</a>
+        <a href="index.html">HarvTTP</a>
+        <a href="network.html">Netzwerk</a>
+        <a href="setup.html">Setup</a>
+      </nav>
+    </div>
+  </header>
+  <main class="layout">
+    <aside class="side">
+      <h2>HarvTTP</h2>
+      <a href="index.html">Uebersicht</a>
+      <a href="operation.html">Funktionsweise</a>
+      <a href="network.html">Netzwerk</a>
+      <a href="setup.html">Setup</a>
+      <a href="php.html">PHP 8.5</a>
+      <a href="limits.html">Grenzen</a>
+    </aside>
+    <article class="doc">
+      <div class="hero">
+        <h1>Aufbau und Ablauf</h1>
+        <p>
+          HarvTTP besteht aus einem kleinen kooperativen Scheduler, einem
+          statischen Content-Bundle, einem Minimal-Netzwerkstack und einer
+          HNET-MMIO-Anbindung mit gebundener RX/TX-DMA.
+        </p>
+      </div>
+
+      <section>
+        <h2>Start durch das Boot-ROM</h2>
+        <p>
+          Das Boot-ROM validiert <code>harvttp.elf</code>, laedt ausfuehrbare
+          Segmente in IMEM, Datensegmente in DMEM, erzeugt Startparameter und
+          legt das HTTP-Bundle in DMEM ab. Beim Sprung in die Anwendung gilt:
+        </p>
+        <pre><code>a0 = adresse von harvos_app_start_params_t
+sp = 0x00178000
+pc = ELF entry point
+IMEM loader = locked</code></pre>
+      </section>
+
+      <section>
+        <h2>Startparameter</h2>
+        <table>
+          <tr><th>Feld</th><th>Verwendung in HarvTTP</th></tr>
+          <tr><td><code>app_id</code></td><td>Wird in die lokale MAC-Adresse eingemischt: <code>02:48:54:54:50:app_id</code>.</td></tr>
+          <tr><td><code>service_mask</code></td><td>Reserviert fuer spaetere Service-Policy.</td></tr>
+          <tr><td><code>debug_flags</code></td><td>Reserviert fuer Debugausgaben/Telemetry.</td></tr>
+          <tr><td><code>preloaded_content_vaddr</code></td><td>Adresse des vom Boot-ROM vorbereiteten HTTP-Bundles.</td></tr>
+          <tr><td><code>preloaded_content_size</code></td><td>Groesse des Bundles; wird gegen Headerfelder validiert.</td></tr>
+          <tr><td><code>config_path</code></td><td>Dokumentiert die Quelle der YAML-Konfiguration.</td></tr>
+          <tr><td><code>data_path</code></td><td>Dokumentiert den persistenten Datenpfad.</td></tr>
+          <tr><td><code>content_root_path</code></td><td>Dokumentiert das Webroot im Programm-Image.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Interne Datenstrukturen</h2>
+        <table>
+          <tr><th>Typ</th><th>Aufgabe</th></tr>
+          <tr><td><code>harvttp_context_t</code></td><td>Zentrale Runtime-Struktur mit Parametern, Threads, Netzstatus, TCP-Peers, Bundle-Zeigern, RX/TX-Puffern und Zaehlern.</td></tr>
+          <tr><td><code>harvttp_thread_t</code></td><td>Kooperativer Task mit Aktiv-Flag, Wake-Tick und Run-Funktion.</td></tr>
+          <tr><td><code>harvttp_net_t</code></td><td>MAC, IP, Netzmaske, Gateway, DNS, DHCP-Server, XID und DHCP-Zustand.</td></tr>
+          <tr><td><code>harvttp_tcp_peer_t</code></td><td>Client-MAC/IP/Port, Sequenznummern, Last-Tick und TCP-State fuer bis zu 64 Peers.</td></tr>
+          <tr><td><code>harvttp_tx_queue_t</code></td><td>64 Slots fuer ausgehende Ethernet-Frames, damit kurze TX-Bursts gepuffert werden koennen.</td></tr>
+          <tr><td><code>harvos_http_bundle_header_t</code></td><td>Header des vorab geladenen Asset-Bundles.</td></tr>
+          <tr><td><code>harvos_http_bundle_entry_t</code></td><td>Eintrag pro Datei: Pfad, Offset, Groesse, MIME-Typ.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Kooperative Threads</h2>
+        <table>
+          <tr><th>ID</th><th>Name</th><th>Aufgabe</th><th>Wake-Verhalten</th></tr>
+          <tr><td>0</td><td>Content</td><td>Validiert Bundle, findet <code>/index.html</code>, setzt Fallback-HTML.</td><td>Laeuft selten, danach grosser Sleep.</td></tr>
+          <tr><td>1</td><td>DHCP</td><td>Sendet Discover/Request und verwaltet Bound-Zustand.</td><td>Kurze Sleeps bis Lease, danach laenger.</td></tr>
+          <tr><td>2</td><td>TX</td><td>Leert die TX-Queue in Richtung HNET.</td><td>1 Tick bei Queue, sonst 2 Ticks.</td></tr>
+          <tr><td>3</td><td>RX/HTTP</td><td>Empfaengt bis zu 32 Frames pro Burst, dispatcht ARP/DHCP/TCP/HTTP.</td><td>1 Tick im Normalbetrieb.</td></tr>
+          <tr><td>4</td><td>Watchdog</td><td>Sendet Telemetrie ueber den HarvOS-Syscall-Pfad.</td><td>4096 Ticks.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Request-Verarbeitung</h2>
+        <ol>
+          <li>HNET meldet <code>RX_VALID</code>.</li>
+          <li>HarvTTP liest den Ethernet-Frame in das DMA-Fenster und kopiert ihn in den RX-Puffer.</li>
+          <li>ARP-Anfragen fuer die eigene IP werden beantwortet.</li>
+          <li>DHCP-Antworten werden ausgewertet, bis <code>bound</code> gesetzt ist.</li>
+          <li>TCP-SYN auf Port 80 erzeugt SYN/ACK.</li>
+          <li><code>GET /pfad</code> wird aus dem HTTP-Bundle gesucht.</li>
+          <li>Bei Treffer wird <code>HTTP/1.0 200 OK</code> mit passendem MIME-Typ gesendet.</li>
+          <li>Bei Fehltreffer wird <code>HTTP/1.0 404 Not Found</code> mit Fallback-HTML gesendet.</li>
+          <li>Die Antwort nutzt <code>Connection: close</code>.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>PHP-Templates</h2>
+        <p>
+          HarvTTP behandelt <code>.php</code>-Dateien im laufenden Image noch als
+          serverseitig gerenderte Templates. Zusaetzlich existiert jetzt unter
+          <code>ports/php85</code> eine echte PHP-8.5-SAPI fuer Zend. Sie wird
+          aktiviert, sobald HarvOS Heap, libc, Streams und VFS bereitstellt.
+          PHP-Quelltext wird in beiden Varianten nicht ausgeliefert.
+        </p>
+        <table>
+          <tr><th>Syntax</th><th>Beispiel</th></tr>
+          <tr><td>Short echo</td><td><code>&lt;?= phpversion() ?&gt;</code></td></tr>
+          <tr><td>Echo</td><td><code>&lt;?php echo $_SERVER['SERVER_SOFTWARE']; ?&gt;</code></td></tr>
+          <tr><td>Konkatenation</td><td><code>&lt;?php echo 'IP: ' . harvttp_ip(); ?&gt;</code></td></tr>
+          <tr><td>Serverinfo</td><td><code>&lt;?php harvttp_info(); ?&gt;</code></td></tr>
+        </table>
+        <p>
+          Unterstuetzt sind <code>phpversion()</code>, <code>time()</code>,
+          <code>harvttp_ip()</code>, <code>remote_addr()</code>, <code>harvttp_info()</code>
+          und ausgewaehlte <code>$_SERVER</code>-Keys. <code>include</code>,
+          <code>require</code>, Dateisystemzugriffe und beliebiges Zend-PHP sind
+          noch nicht enthalten.
+        </p>
+        <p>
+          Details zum echten PHP-8.5-Port stehen auf <a href="php.html">PHP 8.5</a>.
+        </p>
+      </section>
+
+      <section>
+        <h2>Pfad- und MIME-Regeln</h2>
+        <table>
+          <tr><th>Regel</th><th>Beschreibung</th></tr>
+          <tr><td><code>/</code></td><td>Wird zu <code>/index.html</code>.</td></tr>
+          <tr><td>Trailing Slash</td><td><code>/docs/</code> wird zu <code>/docs/index.html</code>, sofern der Puffer reicht.</td></tr>
+          <tr><td>Query/Fragment</td><td>Alles ab <code>?</code> oder <code>#</code> wird ignoriert.</td></tr>
+          <tr><td>Traversal</td><td><code>.</code> und <code>..</code> werden normalisiert; ein Ausbruch oberhalb von <code>/</code> wird abgelehnt.</td></tr>
+          <tr><td>MIME</td><td>HTML, CSS, JS, PNG, JPEG, GIF, SVG, TXT, PHP und Binary werden unterschieden.</td></tr>
+        </table>
+      </section>
+
+      <div class="footer-nav">
+        <a href="index.html">Zurueck: Uebersicht</a>
+        <a href="network.html">Weiter: Netzwerk</a>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

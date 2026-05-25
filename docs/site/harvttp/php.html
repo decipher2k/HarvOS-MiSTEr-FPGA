@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarvTTP - PHP 8.5 Port</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">HarvTTP PHP 8.5</div>
+      <nav class="topnav">
+        <a href="../index.html">Start</a>
+        <a href="index.html">HarvTTP</a>
+        <a href="operation.html">Funktionsweise</a>
+        <a href="setup.html">Setup</a>
+      </nav>
+    </div>
+  </header>
+  <main class="layout">
+    <aside class="side">
+      <h2>HarvTTP</h2>
+      <a href="index.html">Uebersicht</a>
+      <a href="operation.html">Funktionsweise</a>
+      <a href="network.html">Netzwerk</a>
+      <a href="setup.html">Setup</a>
+      <a href="php.html">PHP 8.5</a>
+      <a href="limits.html">Grenzen</a>
+    </aside>
+    <article class="doc">
+      <div class="hero">
+        <h1>Echter PHP-8.5-Port</h1>
+        <p>
+          HarvTTP hat jetzt eine echte PHP/Zend-Andockschicht in Form einer
+          HarvOS-SAPI. Das ist kein weiterer Template-Interpreter, sondern die
+          Schnittstelle, ueber die PHP 8.5 spaeter im HarvOS-ELF laeuft.
+        </p>
+      </div>
+
+      <section>
+        <h2>Port-Dateien</h2>
+        <table>
+          <tr><th>Pfad</th><th>Funktion</th></tr>
+          <tr><td><code>ports/php85/sapi/harvos/php_harvos_sapi.c</code></td><td>HarvOS-SAPI fuer Zend/PHP.</td></tr>
+          <tr><td><code>ports/php85/sapi/harvos/php_harvos_sapi.h</code></td><td>Request-/Response-ABI fuer HarvTTP.</td></tr>
+          <tr><td><code>ports/php85/sapi/harvos/config.m4</code></td><td>PHP-Buildsystem-Integration.</td></tr>
+          <tr><td><code>scripts/build_php85_harvos.ps1</code></td><td>Kopiert das Overlay in die lokale PHP-8.5.6-Quelle und erzeugt Diagnose-Metadaten.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>SAPI-Ablauf</h2>
+        <ol>
+          <li>HarvTTP findet eine <code>.php</code>-Datei im Programm-USB-Bundle.</li>
+          <li>HarvTTP baut eine <code>harvos_php85_request_t</code> mit URI, Script-Name, IPs, POST-Daten und Puffern.</li>
+          <li>Die HarvOS-SAPI setzt restriktive INI-Werte und populaert <code>$_SERVER</code>.</li>
+          <li>Zend kompiliert das Script aus einem memory-backed stream.</li>
+          <li>Ausgabe und Header werden in HarvTTP-Puffer geschrieben.</li>
+          <li>HarvTTP sendet die HTTP-Antwort ueber den CPU-echten HNET-Pfad.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Build-Vorbereitung</h2>
+        <pre><code>powershell -ExecutionPolicy Bypass -File .\scripts\build_php85_harvos.ps1 -Overlay</code></pre>
+        <p>
+          Das Script legt <code>sapi/harvos</code> in
+          <code>C:\Users\dennis\Downloads\php-8.5.6-src</code> an und schreibt
+          ein Manifest nach <code>build/php85-harvos/port_manifest.json</code>.
+        </p>
+      </section>
+
+      <section>
+        <h2>Aktueller Blocker</h2>
+        <p>
+          PHP/Zend ist nicht freestanding. Der Port kann erst in
+          <code>harvttp.elf</code> gelinkt werden, wenn HarvOS eine PHP-taugliche
+          Runtime-Schicht hat: Heap, <code>setjmp/longjmp</code>, <code>errno</code>,
+          stdio/Streams, Zeitfunktionen und einen VFS-Bridge fuer Programm-USB
+          und Daten-USB.
+        </p>
+      </section>
+
+      <section>
+        <h2>Sicherheitsprofil</h2>
+        <ul>
+          <li><code>expose_php=0</code>, <code>allow_url_include=0</code> und <code>enable_dl=0</code>.</li>
+          <li><code>open_basedir</code> begrenzt Webroot und HarvTTP-Datenpfad.</li>
+          <li>Shell-, Prozess- und Socket-Funktionen sind in der Default-INI deaktiviert.</li>
+          <li>Die eigentliche Isolation muss ueber HarvOS MPU/MMU und Supervisor-Rechte erfolgen.</li>
+        </ul>
+      </section>
+
+      <div class="footer-nav">
+        <a href="setup.html">Zurueck: Setup</a>
+        <a href="limits.html">Weiter: Grenzen</a>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

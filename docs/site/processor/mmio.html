@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarvOS Prozessor - MMIO</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">HarvOS MMIO</div>
+      <nav class="topnav">
+        <a href="../index.html">Start</a>
+        <a href="index.html">Prozessor</a>
+        <a href="security.html">Security</a>
+        <a href="../harvttp/network.html">HarvTTP Netzwerk</a>
+      </nav>
+    </div>
+  </header>
+  <main class="layout">
+    <aside class="side">
+      <h2>Prozessor</h2>
+      <a href="index.html">Uebersicht</a>
+      <a href="architecture.html">Architektur</a>
+      <a href="isa.html">ISL / ISA</a>
+      <a href="memory.html">Speicher</a>
+      <a href="boot.html">Boot-ROM</a>
+      <a href="mmio.html">MMIO</a>
+      <a href="security.html">Security</a>
+    </aside>
+    <article class="doc">
+      <div class="hero">
+        <h1>Memory-Mapped I/O</h1>
+        <p>
+          HarvOS nutzt einen kleinen MMIO-Bereich bei <code>0xffff0000</code>.
+          Die CPU greift ueber normale Load/Store-Instruktionen darauf zu, wobei
+          die MPU und das SoC-Adressdecoding entscheiden, welcher Block antwortet.
+        </p>
+      </div>
+
+      <section>
+        <h2>MMIO-Karte</h2>
+        <table>
+          <tr><th>Basis</th><th>Block</th><th>Nutzung</th></tr>
+          <tr><td><code>0xffff0000</code></td><td>Debug / Kernelmodell</td><td>Debug-PC, Trap-Cause, Entropy, Bootstatus, DMA-Status.</td></tr>
+          <tr><td><code>0xffff0030</code></td><td>IMEM Loader</td><td>Kontrollierter Code-Load in IMEM und Lock.</td></tr>
+          <tr><td><code>0xffff0040</code></td><td>HNET</td><td>Packet-DMA-Netzwerkkarte fuer HarvTTP.</td></tr>
+          <tr><td><code>0xffff0080</code></td><td>USB Host</td><td>USB-Host-Controller, DMA, PHY/Port-Control.</td></tr>
+          <tr><td><code>0xffff00c0</code></td><td>HPS Block</td><td>MiSTer/HPS-kompatibler Blockzugriff auf zwei Images.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>IMEM Loader</h2>
+        <table>
+          <tr><th>Offset</th><th>Name</th><th>Beschreibung</th></tr>
+          <tr><td><code>0x00</code></td><td><code>ID</code></td><td>Identifikation/Statusleseweg.</td></tr>
+          <tr><td><code>0x04</code></td><td><code>CTRL</code></td><td>Bits: <code>WRITE</code>, <code>LOCK</code>, <code>CLEAR</code>.</td></tr>
+          <tr><td><code>0x08</code></td><td><code>ADDR</code></td><td>Zieladresse im IMEM.</td></tr>
+          <tr><td><code>0x0c</code></td><td><code>DATA</code></td><td>32-Bit Instruktionswort.</td></tr>
+        </table>
+        <p>
+          Statusbits melden <code>DONE</code>, <code>FAULT</code> und
+          <code>LOCKED</code>. Sobald <code>LOCK</code> aktiv ist, sind weitere
+          Writes bis zum Reset nicht mehr erlaubt.
+        </p>
+      </section>
+
+      <section>
+        <h2>HNET Packet-DMA NIC</h2>
+        <table>
+          <tr><th>Register</th><th>Offset</th><th>Beschreibung</th></tr>
+          <tr><td><code>CTRL</code></td><td><code>0x04</code></td><td><code>ENABLE</code>, <code>LOOPBACK</code>, <code>CLEAR</code>, <code>PROMISC</code>, <code>SIM_LINK</code>.</td></tr>
+          <tr><td><code>STATUS</code></td><td><code>0x08</code></td><td><code>LINK</code>, <code>BUSY</code>, <code>DONE</code>, <code>FAULT</code>, <code>IRQ</code>, <code>RX_OP</code>, <code>TX_READY</code>, <code>RX_VALID</code>, <code>RX_ERROR</code>.</td></tr>
+          <tr><td><code>IRQ_EN</code>/<code>IRQ_STAT</code></td><td><code>0x0c</code>/<code>0x10</code></td><td>RX_DONE, TX_DONE, FAULT, LINK.</td></tr>
+          <tr><td><code>RX_ADDR</code>/<code>RX_LEN</code></td><td><code>0x14</code>/<code>0x18</code></td><td>DMA-Ziel fuer eingehenden Frame.</td></tr>
+          <tr><td><code>TX_ADDR</code>/<code>TX_LEN</code></td><td><code>0x20</code>/<code>0x24</code></td><td>DMA-Quelle fuer ausgehenden Frame.</td></tr>
+          <tr><td><code>MAC_LO</code>/<code>MAC_HI</code></td><td><code>0x28</code>/<code>0x2c</code></td><td>Virtuelle MAC-Adresse.</td></tr>
+          <tr><td><code>FRAME_LEN</code></td><td><code>0x30</code></td><td>Tatsaechliche RX-Frame-Laenge.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>USB Host</h2>
+        <p>
+          Der USB-Host-Block stellt Register fuer DMA-Adresse/-Laenge, Command,
+          Portsteuerung, Frame, Actual Length, Token, PHY, Packet, Retry und
+          Engine bereit. Kontrollbits umfassen Enable, simulierte Verbindung,
+          Clear, Port-Power, UTMI-Nutzung und Port-Reset. Status/IRQ-Bits melden
+          Done, Fault, Stall, NAK-Limit und Overcurrent.
+        </p>
+        <table>
+          <tr><th>Aspekt</th><th>Beschreibung</th></tr>
+          <tr><td>PHY</td><td>Signale fuer DP/DM-Fallback und UTMI-Interface sind am SoC vorhanden.</td></tr>
+          <tr><td>DMA</td><td>Transfers laufen durch das 2048-Byte-DMA-Fenster und die DMA-IOMMU.</td></tr>
+          <tr><td>Port Power</td><td><code>HARVOS_USB_CTRL_PORT_POWER</code> steuert <code>usb_port_power_en</code>.</td></tr>
+          <tr><td>Fehler</td><td>STALL, NAK-Limit, Fault und Overcurrent koennen per IRQ gemeldet werden.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>HPS Block</h2>
+        <p>
+          Der HPS-Block ist der aktuelle realistische Weg, die zwei USB-Images
+          in der MiSTer/Verilator-Umgebung als Blockdevices an das SoC zu geben.
+          Register umfassen Drive-Auswahl, LBA, Blockanzahl, Buffer-Index,
+          Buffer-Daten, Media-Groesse und Debugstatus.
+        </p>
+      </section>
+
+      <div class="footer-nav">
+        <a href="boot.html">Zurueck: Boot-ROM</a>
+        <a href="security.html">Weiter: Security</a>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

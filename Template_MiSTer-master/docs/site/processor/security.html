@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarvOS Prozessor - Security</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">HarvOS Security</div>
+      <nav class="topnav">
+        <a href="../index.html">Start</a>
+        <a href="index.html">Prozessor</a>
+        <a href="boot.html">Boot</a>
+        <a href="../harvttp/index.html">HarvTTP</a>
+      </nav>
+    </div>
+  </header>
+  <main class="layout">
+    <aside class="side">
+      <h2>Prozessor</h2>
+      <a href="index.html">Uebersicht</a>
+      <a href="architecture.html">Architektur</a>
+      <a href="isa.html">ISL / ISA</a>
+      <a href="memory.html">Speicher</a>
+      <a href="boot.html">Boot-ROM</a>
+      <a href="mmio.html">MMIO</a>
+      <a href="security.html">Security</a>
+    </aside>
+    <article class="doc">
+      <div class="hero">
+        <h1>Sicherheitsmodell</h1>
+        <p>
+          Das aktuelle Sicherheitsmodell kombiniert Secure-Boot-Prototyp,
+          Harvard-Trennung, IMEM-Loader-Lock, W^X-Pruefung im ELF-Loader,
+          MMU/MPU-Pruefungen und DMA-IOMMU-Fenster.
+        </p>
+      </div>
+
+      <section>
+        <h2>Implementierte Schutzmechanismen</h2>
+        <table>
+          <tr><th>Mechanismus</th><th>Wirkung</th><th>Grenze</th></tr>
+          <tr><td>Secure Boot</td><td>Vergleicht erwartete Hash-/Key-/Signaturwerte und setzt <code>boot_ok</code>.</td><td>Aktuell Prototypwerte im RTL, kein vollstaendiger Produktions-Key-Lifecycle.</td></tr>
+          <tr><td>IMEM-Lock</td><td>Schreibpfad in den Instruktionsspeicher wird nach dem ELF-Load gesperrt.</td><td>Lock gilt bis Reset; Multiboot/Hotpatching braucht ein neues Protokoll.</td></tr>
+          <tr><td>W^X</td><td>Boot-ROM lehnt ELF-Segmente mit <code>PF_W|PF_X</code> ab.</td><td>Keine Signaturpruefung einzelner ELF-Dateien im aktuellen Boot-ROM.</td></tr>
+          <tr><td>MMU/MPU</td><td>Fetch/Data-Zugriffe werden getrennt und bei gesetzter PPN ueber eigene L1/L0-Page-Tables mit ASID-tagged TLB begrenzt; der Supervisor setzt Stack-Guard-Pages.</td><td>Kein komplettes RISC-V-Sv32 inklusive Superpages/Accessed-Dirty-Update; produktive Systeme brauchen weiter Supervisor-Policy und Lifecycle-Handling.</td></tr>
+          <tr><td>DMA-IOMMU</td><td>USB/HNET-DMA wird auf ein kleines Fenster begrenzt.</td><td>Produktionssystem sollte pro Geraet eigene DMA-Ringe und Rechte nutzen.</td></tr>
+          <tr><td>YAML-Pfade</td><td>Boot-ROM verlangt passendes YAML und Datenverzeichnis pro ELF.</td><td>YAML selbst ist noch nicht kryptografisch authentifiziert.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Empfohlene Produktionshaertung</h2>
+        <ol>
+          <li>ELF-Manifest mit SHA-256/Signatur pro Datei einfuehren.</li>
+          <li>YAML-Konfiguration in das gleiche signierte Manifest aufnehmen.</li>
+          <li>Programm-USB schreibgeschuetzt oder mit Verified-FS betreiben.</li>
+          <li>Daten-USB mit App-spezifischen Rechten, Quotas und Journal versehen.</li>
+          <li>Supervisor als erste geladene ELF/Kernelstufe nutzen und Apps danach als Tasks starten.</li>
+          <li>Pro Task eigene L1/L0-Page-Tables nutzen: Code RX, Daten RW, Stack-Guard unten/oben, Parameter-/Content-Guards, keine W^X-Mappings.</li>
+          <li>Watchdog mit Recovery-Mode und sauberem Crashlog auf Daten-USB einsetzen.</li>
+          <li>Netzwerkstack gegen malformed Frames, SYN-Floods und grosse Header validieren.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Boot-ROM vs. Supervisor</h2>
+        <p>
+          Ein Boot-ROM sollte initialisieren, validieren, laden und die Kontrolle
+          uebergeben. Es sollte nicht dauerhaft Webserver, Dateisysteme,
+          Scheduler und Netzwerkpolitik hosten. Lang laufende Services gehoeren
+          in eine Supervisor- oder Microkernel-Schicht, die Speicherrechte,
+          Scheduling, Fehlerbehandlung und Geraetezugriff verwaltet.
+        </p>
+        <div class="note">
+          Die empfohlene finale Architektur bleibt: Boot-ROM initialisiert Hardware,
+          Bootloader laedt Supervisor/Microkernel, der Supervisor laedt Server-ELFs,
+          sperrt Codebereiche und startet jede Anwendung als isolierten Task.
+        </div>
+      </section>
+
+      <section>
+        <h2>Recovery-Modus</h2>
+        <p>
+          Ein robuster Recovery-Modus sollte bei Signaturfehlern, fehlendem
+          Programm-USB, fehlendem Daten-USB, ELF-Validierungsfehlern oder
+          Watchdog-Reset aktiv werden. Sinnvoll sind eine kleine serielle Konsole,
+          ein nur-lesbares Recovery-Image und eine Debugseite, sofern Netzwerk
+          sicher genug initialisiert werden kann.
+        </p>
+      </section>
+
+      <div class="footer-nav">
+        <a href="mmio.html">Zurueck: MMIO</a>
+        <a href="../harvttp/index.html">Weiter: HarvTTP</a>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

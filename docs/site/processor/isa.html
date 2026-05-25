@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarvOS Prozessor - ISL / ISA</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">HarvOS ISL</div>
+      <nav class="topnav">
+        <a href="../index.html">Start</a>
+        <a href="index.html">Prozessor</a>
+        <a href="architecture.html">Architektur</a>
+        <a href="../harvttp/index.html">HarvTTP</a>
+      </nav>
+    </div>
+  </header>
+  <main class="layout">
+    <aside class="side">
+      <h2>Prozessor</h2>
+      <a href="index.html">Uebersicht</a>
+      <a href="architecture.html">Architektur</a>
+      <a href="isa.html">ISL / ISA</a>
+      <a href="memory.html">Speicher</a>
+      <a href="boot.html">Boot-ROM</a>
+      <a href="mmio.html">MMIO</a>
+      <a href="security.html">Security</a>
+    </aside>
+    <article class="doc">
+      <div class="hero">
+        <h1>ISL - Instruction Set Listing</h1>
+        <p>
+          "ISL" wird hier als vollstaendige Instruktionslisten-Dokumentation der
+          aktuell implementierten HarvOS-ISA verstanden. Die ISA ist RV32I-nah,
+          aber nicht als vollstaendig normkonformer RISC-V-Core dokumentiert.
+        </p>
+      </div>
+
+      <section>
+        <h2>Encoding-Grundlagen</h2>
+        <table>
+          <tr><th>Gruppe</th><th>Opcode</th><th>Beschreibung</th></tr>
+          <tr><td>LOAD</td><td><code>0000011</code></td><td>Byte/Halfword/Word Loads.</td></tr>
+          <tr><td>FENCE</td><td><code>0001111</code></td><td><code>FENCE</code> und <code>FENCE.I</code>; <code>FENCE.I</code> flushes TLB im aktuellen Modell.</td></tr>
+          <tr><td>OP-IMM</td><td><code>0010011</code></td><td>Integer-Immediate-Operationen.</td></tr>
+          <tr><td>AUIPC</td><td><code>0010111</code></td><td>PC-relative U-Type-Bildung.</td></tr>
+          <tr><td>STORE</td><td><code>0100011</code></td><td>Byte/Halfword/Word Stores.</td></tr>
+          <tr><td>OP</td><td><code>0110011</code></td><td>Register-Register-ALU.</td></tr>
+          <tr><td>LUI</td><td><code>0110111</code></td><td>Upper-Immediate Load.</td></tr>
+          <tr><td>BRANCH</td><td><code>1100011</code></td><td>Bedingte Spruenge.</td></tr>
+          <tr><td>JALR</td><td><code>1100111</code></td><td>Indirekter Sprung mit Link.</td></tr>
+          <tr><td>JAL</td><td><code>1101111</code></td><td>PC-relativer Sprung mit Link.</td></tr>
+          <tr><td>SYSTEM</td><td><code>1110011</code></td><td>ECALL, EBREAK, CSR-Operationen.</td></tr>
+          <tr><td>CUSTOM-0</td><td><code>0001011</code></td><td>HarvOS-spezifische Sicherheits- und Runtime-Instruktionen.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>RISC-V-Profil und Abweichungen</h2>
+        <p>
+          Die gelisteten Basis-Instruktionen verwenden RISC-V-aehnliche
+          32-Bit-Encodings und Registerfelder. HarvOS dokumentiert hier aber den
+          implementierten Core, nicht die Konformitaet zu einer kompletten
+          RISC-V-Plattform.
+        </p>
+        <table>
+          <tr><th>Aspekt</th><th>Gleich zu RISC-V</th><th>HarvOS-Abweichung</th></tr>
+          <tr><td>Basis-Encoding</td><td>Opcode-, <code>rd</code>-, <code>rs1</code>-, <code>rs2</code>-, <code>funct3</code>- und Immediate-Felder folgen fuer die gelisteten RV32I-nahen Instruktionen dem ueblichen Format.</td><td>Nicht gelistete Opcodes/Funct-Kombinationen sind illegal; es gibt keine implizite Unterstuetzung fuer die komplette RISC-V-Spezifikation.</td></tr>
+          <tr><td>Extensions</td><td>RV32I-nahe Integer-Grundoperationen.</td><td>Keine <code>M</code>, <code>A</code>, <code>C</code>, Floating-Point- oder Privileged-ISA-Erweiterungen ausser den hier beschriebenen lokalen CSRs.</td></tr>
+          <tr><td>Privilegien/CSRs</td><td>Privilege-Namen <code>U</code>/<code>S</code>/<code>M</code> sind angelehnt.</td><td>CSR-Adressen und Semantik sind HarvOS-lokal; insbesondere ist die MPU nicht RISC-V PMP und <code>satp</code> ist kein vollstaendiges Sv32-Modell.</td></tr>
+          <tr><td>Speicherschutz</td><td>Load/Store/Fetch koennen Faults ausloesen.</td><td>Harvard-Regeln, W^X-Pruefung, MMU-Regionenmodell und feste MPU sind HarvOS-spezifisch.</td></tr>
+          <tr><td><code>FENCE.I</code></td><td>Eigener Opcode/Funct3 wie im RISC-V-nahen Encoding.</td><td>Flushes den HarvOS-TLB; es gibt derzeit keinen separaten I-Cache.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Registermodell</h2>
+        <p>
+          Es gibt 32 Integer-Register <code>x0..x31</code>. <code>x0</code> ist
+          permanent null und wird in jedem Takt zurueck auf <code>0</code> gesetzt.
+          Die ABI folgt den ueblichen RISC-V-Konventionen: <code>a0</code> ist
+          Argument/Rueckgabe, <code>a7</code> enthaelt die Syscall-Nummer.
+        </p>
+      </section>
+
+      <section>
+        <h2>ALU- und Immediate-Instruktionen</h2>
+        <table>
+          <tr><th>Mnemonic</th><th>Format</th><th>Operation</th><th>Hinweise</th></tr>
+          <tr><td><code>ADD</code></td><td>R</td><td><code>rd = rs1 + rs2</code></td><td><code>funct7=0000000</code></td></tr>
+          <tr><td><code>SUB</code></td><td>R</td><td><code>rd = rs1 - rs2</code></td><td><code>funct7=0100000</code></td></tr>
+          <tr><td><code>SLL</code></td><td>R</td><td><code>rd = rs1 &lt;&lt; rs2[4:0]</code></td><td>Logischer Links-Shift.</td></tr>
+          <tr><td><code>SLT</code></td><td>R/I</td><td>Signed kleiner-als.</td><td>Resultat <code>0</code> oder <code>1</code>.</td></tr>
+          <tr><td><code>SLTU</code></td><td>R/I</td><td>Unsigned kleiner-als.</td><td>Resultat <code>0</code> oder <code>1</code>.</td></tr>
+          <tr><td><code>XOR</code></td><td>R/I</td><td>Bitweises XOR.</td><td></td></tr>
+          <tr><td><code>SRL</code></td><td>R/I</td><td>Logischer Rechts-Shift.</td><td><code>funct7=0000000</code></td></tr>
+          <tr><td><code>SRA</code></td><td>R/I</td><td>Arithmetischer Rechts-Shift.</td><td><code>funct7=0100000</code></td></tr>
+          <tr><td><code>OR</code></td><td>R/I</td><td>Bitweises OR.</td><td></td></tr>
+          <tr><td><code>AND</code></td><td>R/I</td><td>Bitweises AND.</td><td></td></tr>
+          <tr><td><code>ADDI</code></td><td>I</td><td><code>rd = rs1 + signext(imm12)</code></td><td>Haeufig fuer Pointer-Arithmetik.</td></tr>
+          <tr><td><code>LUI</code></td><td>U</td><td><code>rd = imm20 &lt;&lt; 12</code></td><td>Upper Immediate.</td></tr>
+          <tr><td><code>AUIPC</code></td><td>U</td><td><code>rd = pc + (imm20 &lt;&lt; 12)</code></td><td>PC-relative Adressbildung.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Load/Store</h2>
+        <table>
+          <tr><th>Mnemonic</th><th>Breite</th><th>Semantik</th><th>Trap-Bedingungen</th></tr>
+          <tr><td><code>LB</code></td><td>8 Bit</td><td>Signed Byte Load.</td><td>MMU/MPU-Fehler.</td></tr>
+          <tr><td><code>LH</code></td><td>16 Bit</td><td>Signed Halfword Load.</td><td>Adresse muss 2-Byte aligned sein.</td></tr>
+          <tr><td><code>LW</code></td><td>32 Bit</td><td>Word Load.</td><td>Adresse muss 4-Byte aligned sein.</td></tr>
+          <tr><td><code>LBU</code></td><td>8 Bit</td><td>Unsigned Byte Load.</td><td>MMU/MPU-Fehler.</td></tr>
+          <tr><td><code>LHU</code></td><td>16 Bit</td><td>Unsigned Halfword Load.</td><td>Adresse muss 2-Byte aligned sein.</td></tr>
+          <tr><td><code>SB</code></td><td>8 Bit</td><td>Byte Store mit Byte Enable.</td><td>MMU/MPU-Fehler.</td></tr>
+          <tr><td><code>SH</code></td><td>16 Bit</td><td>Halfword Store.</td><td>Adresse muss 2-Byte aligned sein.</td></tr>
+          <tr><td><code>SW</code></td><td>32 Bit</td><td>Word Store.</td><td>Adresse muss 4-Byte aligned sein.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Control Flow</h2>
+        <table>
+          <tr><th>Mnemonic</th><th>Semantik</th><th>Hinweis</th></tr>
+          <tr><td><code>BEQ</code></td><td>Branch wenn <code>rs1 == rs2</code>.</td><td>Ziel muss 4-Byte aligned sein.</td></tr>
+          <tr><td><code>BNE</code></td><td>Branch wenn <code>rs1 != rs2</code>.</td><td></td></tr>
+          <tr><td><code>BLT</code></td><td>Signed <code>rs1 &lt; rs2</code>.</td><td></td></tr>
+          <tr><td><code>BGE</code></td><td>Signed <code>rs1 &gt;= rs2</code>.</td><td></td></tr>
+          <tr><td><code>BLTU</code></td><td>Unsigned <code>rs1 &lt; rs2</code>.</td><td></td></tr>
+          <tr><td><code>BGEU</code></td><td>Unsigned <code>rs1 &gt;= rs2</code>.</td><td></td></tr>
+          <tr><td><code>JAL</code></td><td><code>rd = pc + 4</code>, <code>pc = pc + imm</code>.</td><td>Ziel muss 4-Byte aligned sein.</td></tr>
+          <tr><td><code>JALR</code></td><td><code>rd = pc + 4</code>, <code>pc = (rs1 + imm) &amp; ~1</code>.</td><td>Finales Ziel muss 4-Byte aligned sein.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>System, CSR und Custom-0</h2>
+        <table>
+          <tr><th>Instruktion</th><th>Encoding</th><th>Beschreibung</th><th>Privilegien</th></tr>
+          <tr><td><code>ECALL</code></td><td><code>0x00000073</code></td><td>Trap nach <code>SCAUSE_ECALL_U</code> oder <code>SCAUSE_ECALL_S</code>; optionales Testverhalten <code>ECALL_NO_TRAP</code>.</td><td>User/Supervisor.</td></tr>
+          <tr><td><code>EBREAK</code></td><td><code>0x00100073</code></td><td>Trap <code>SCAUSE_BREAKPOINT</code>.</td><td>User/Supervisor.</td></tr>
+          <tr><td><code>CSRRW</code></td><td><code>funct3=001</code>, <code>opcode=1110011</code></td><td>CSR lesen und mit <code>rs1</code> ueberschreiben.</td><td>Nur Supervisor.</td></tr>
+          <tr><td><code>CSRRS</code></td><td><code>funct3=010</code>, <code>opcode=1110011</code></td><td>CSR lesen und Bits aus <code>rs1</code> setzen; mit <code>rs1=x0</code> nur lesen.</td><td>Nur Supervisor.</td></tr>
+          <tr><td><code>CSRRC</code></td><td><code>funct3=011</code>, <code>opcode=1110011</code></td><td>CSR lesen und Bits aus <code>rs1</code> loeschen; mit <code>rs1=x0</code> nur lesen.</td><td>Nur Supervisor.</td></tr>
+          <tr><td><code>CLRREG rd</code></td><td>Custom-0, <code>funct3=000</code></td><td>Schreibt <code>0</code> nach <code>rd</code>; bei <code>rd=x0</code> keine sichtbare Wirkung.</td><td>User/Supervisor.</td></tr>
+          <tr><td><code>CLRMEM rs1, rs2</code></td><td>Custom-0, <code>funct3=001</code></td><td>Setzt ab Adresse <code>rs1</code> genau <code>rs2</code> 32-Bit-Worte auf null. Adresse muss 4-Byte aligned sein, MMIO ist verboten, <code>rs2=0</code> ist No-op.</td><td>Nur Supervisor.</td></tr>
+          <tr><td><code>ENTROPY rd</code></td><td>Custom-0, <code>funct3=010</code></td><td><code>rd = entropy_i ^ csr_srandom</code>.</td><td>User/Supervisor.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Custom-0-Bitlayout</h2>
+        <p>
+          Custom-0 nutzt das R-Type-artige RISC-V-Custom-0-Opcode-Feld
+          <code>0001011</code>. Der lokale Assembler erzeugt:
+        </p>
+        <pre><code>word = (rs2 &lt;&lt; 20) | (rs1 &lt;&lt; 15) | (funct3 &lt;&lt; 12) | (rd &lt;&lt; 7) | 0x0b</code></pre>
+        <table>
+          <tr><th>Bits</th><th>Name</th><th>Bedeutung</th></tr>
+          <tr><td><code>6:0</code></td><td><code>opcode</code></td><td><code>0001011</code> / <code>0x0b</code>.</td></tr>
+          <tr><td><code>11:7</code></td><td><code>rd</code></td><td>Zielregister fuer <code>CLRREG</code> und <code>ENTROPY</code>; bei <code>CLRMEM</code> ignoriert und vom Assembler als <code>x0</code> gesetzt.</td></tr>
+          <tr><td><code>14:12</code></td><td><code>funct3</code></td><td><code>000</code> = <code>CLRREG</code>, <code>001</code> = <code>CLRMEM</code>, <code>010</code> = <code>ENTROPY</code>; andere Werte sind illegal.</td></tr>
+          <tr><td><code>19:15</code></td><td><code>rs1</code></td><td>Basisadresse fuer <code>CLRMEM</code>; sonst vom Assembler als <code>x0</code> gesetzt.</td></tr>
+          <tr><td><code>24:20</code></td><td><code>rs2</code></td><td>Wortanzahl fuer <code>CLRMEM</code>; sonst vom Assembler als <code>x0</code> gesetzt.</td></tr>
+          <tr><td><code>31:25</code></td><td>reserviert</td><td>RTL wertet diese Bits derzeit bei Custom-0 nicht aus; Software soll sie fuer Vorwaertskompatibilitaet auf <code>0</code> setzen.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>CSRs</h2>
+        <table>
+          <tr><th>CSR</th><th>Adresse</th><th>Bedeutung</th></tr>
+          <tr><td><code>sstatus</code></td><td><code>0x100</code></td><td>Interrupt-Enable und feste Statusbits; schreibbare Maske <code>0x00000003</code>.</td></tr>
+          <tr><td><code>stvec</code></td><td><code>0x101</code></td><td>Trap-Vektor, 4-Byte aligned.</td></tr>
+          <tr><td><code>sepc</code></td><td><code>0x102</code></td><td>Trap-PC, 4-Byte aligned.</td></tr>
+          <tr><td><code>scause</code></td><td><code>0x103</code></td><td>Trap-Ursache.</td></tr>
+          <tr><td><code>stval</code></td><td><code>0x104</code></td><td>Trap-Zusatzwert, meistens Adresse oder Instruktionswort.</td></tr>
+          <tr><td><code>satp</code></td><td><code>0x105</code></td><td>Seitentabellensteuerung; Mode-Bit wird gesetzt.</td></tr>
+          <tr><td><code>srandom</code></td><td><code>0x120</code></td><td>Software-Mischwert fuer <code>ENTROPY</code>.</td></tr>
+          <tr><td><code>smpuctl</code></td><td><code>0x130</code></td><td>MPU-Lock; Schreibzugriff setzt Lock-Bit.</td></tr>
+          <tr><td><code>scaps</code></td><td><code>0x140</code></td><td>Capability-Maske fuer Runtime-Policy.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Trap-Codes</h2>
+        <table>
+          <tr><th>Name</th><th>Code</th><th>Ausloeser</th></tr>
+          <tr><td><code>SCAUSE_INST_ADDR_MISALIGNED</code></td><td><code>0x00000000</code></td><td>PC oder Branch/JAL-Ziel nicht 4-Byte aligned.</td></tr>
+          <tr><td><code>SCAUSE_INST_ACCESS_FAULT</code></td><td><code>0x00000001</code></td><td>Fetch-MMU/MPU verweigert Zugriff.</td></tr>
+          <tr><td><code>SCAUSE_ILLEGAL_INSTRUCTION</code></td><td><code>0x00000002</code></td><td>Nicht implementierter Opcode/Funct oder unzulaessiger Privilegienzugriff.</td></tr>
+          <tr><td><code>SCAUSE_BREAKPOINT</code></td><td><code>0x00000003</code></td><td><code>EBREAK</code>.</td></tr>
+          <tr><td><code>SCAUSE_LOAD_ADDR_MISALIGNED</code></td><td><code>0x00000004</code></td><td>Misaligned <code>LH/LHU/LW</code>.</td></tr>
+          <tr><td><code>SCAUSE_LOAD_ACCESS_FAULT</code></td><td><code>0x00000005</code></td><td>Load verboten.</td></tr>
+          <tr><td><code>SCAUSE_STORE_ADDR_MISALIGNED</code></td><td><code>0x00000006</code></td><td>Misaligned <code>SH/SW</code> oder <code>CLRMEM</code>.</td></tr>
+          <tr><td><code>SCAUSE_STORE_ACCESS_FAULT</code></td><td><code>0x00000007</code></td><td>Store verboten.</td></tr>
+          <tr><td><code>SCAUSE_ECALL_U</code></td><td><code>0x00000008</code></td><td>ECALL aus User Mode.</td></tr>
+          <tr><td><code>SCAUSE_ECALL_S</code></td><td><code>0x00000009</code></td><td>ECALL aus Supervisor Mode.</td></tr>
+          <tr><td><code>SCAUSE_HARVARD_VIOLATION</code></td><td><code>0x0000000a</code></td><td>Verstoss gegen IMEM/DMEM-Trennung.</td></tr>
+          <tr><td><code>SCAUSE_EXTERNAL_INTERRUPT</code></td><td><code>0x8000000b</code></td><td>Externer IRQ, z. B. USB oder HNET.</td></tr>
+        </table>
+      </section>
+
+      <div class="footer-nav">
+        <a href="architecture.html">Zurueck: Architektur</a>
+        <a href="memory.html">Weiter: Speicher</a>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

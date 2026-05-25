@@ -1,0 +1,12 @@
+{
+  "app": "harvttp",
+  "content_root": "/confg/harvttp/httproot",
+  "dns": "10.0.2.3",
+  "gateway": "10.0.2.2",
+  "host_bridge": "http://127.0.0.1:61094/",
+  "netmask": "255.255.255.0",
+  "pid": 18560,
+  "program_image": "C:\\Users\\dennis\\Documents\\HarvOS\\Template_MiSTer-master\\release\\program_usb.img",
+  "server_ip": "10.0.2.15",
+  "transport": "harvos-hnet-test-bridge"
+}

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarvTTP - Grenzen und Ausbau</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">HarvTTP Grenzen</div>
+      <nav class="topnav">
+        <a href="../index.html">Start</a>
+        <a href="index.html">HarvTTP</a>
+        <a href="setup.html">Setup</a>
+        <a href="../processor/security.html">Security</a>
+      </nav>
+    </div>
+  </header>
+  <main class="layout">
+    <aside class="side">
+      <h2>HarvTTP</h2>
+      <a href="index.html">Uebersicht</a>
+      <a href="operation.html">Funktionsweise</a>
+      <a href="network.html">Netzwerk</a>
+      <a href="setup.html">Setup</a>
+      <a href="php.html">PHP 8.5</a>
+      <a href="limits.html">Grenzen</a>
+    </aside>
+    <article class="doc">
+      <div class="hero">
+        <h1>Grenzen, Risiken und naechste Schritte</h1>
+        <p>
+          HarvTTP funktioniert als CPU-echter Boot-ROM/ELF/NIC-Demonstrator.
+          Fuer produktiven Betrieb braucht der Stack jedoch noch einen robusteren
+          Kernel/Supervisor, einen volleren TCP/IP-Stack und bessere I/O-Pfade.
+        </p>
+      </div>
+
+      <section>
+        <h2>Aktuelle Stresstest-Tendenz</h2>
+        <p>
+          Nach der TX-Queue-Optimierung bedient HarvTTP niedrige Parallelitaet
+          stabil. Hoehere Parallelitaet zeigt jedoch die Grenzen des Minimal-TCP-
+          und DMA-Pfads. Beispielwerte aus dem letzten Testlauf:
+        </p>
+        <table>
+          <tr><th>Concurrency</th><th>Requests</th><th>Median</th><th>p95</th><th>Bewertung</th></tr>
+          <tr><td>1</td><td>20/20</td><td>0.109 s</td><td>-</td><td>Gut fuer Smoke-Tests.</td></tr>
+          <tr><td>4</td><td>80/80</td><td>0.393 s</td><td>-</td><td>Brauchbar fuer Demo-Last.</td></tr>
+          <tr><td>8</td><td>80/80</td><td>0.818 s</td><td>-</td><td>Noch stabil, aber klar limitiert.</td></tr>
+          <tr><td>16</td><td>80/80</td><td>1.793 s</td><td>5.196 s</td><td>Zu langsam fuer Produktion.</td></tr>
+          <tr><td>32</td><td>64/64</td><td>3.697 s</td><td>7.786 s</td><td>Starker Rueckstau.</td></tr>
+          <tr><td>64</td><td>60/64</td><td>9.191 s</td><td>13.081 s</td><td>Timeouts/Verluste moeglich.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Warum das fuer Produktion noch nicht reicht</h2>
+        <ul>
+          <li>Der TCP-Code ist minimal und hat keine vollstaendige Retransmission oder Congestion Control.</li>
+          <li>HTTP/1.0 mit <code>Connection: close</code> erzeugt viele kurze TCP-Flows.</li>
+          <li>Das DMA-Fenster ist klein und blockierend genutzt.</li>
+          <li>Der Scheduler ist kooperativ und nicht preemptiv.</li>
+          <li>Die CPU besitzt jetzt ASID-getaggte L1/L0-Page-Tables und Guard-Page-Unterstuetzung; fuer Produktionsbetrieb fehlen noch ein preemptiver Supervisor und vollstaendige Trap-/Restart-Policy.</li>
+          <li>Assets werden als Boot-Bundle geladen; dynamischer Dateizugriff waehrend des Betriebs fehlt.</li>
+          <li>PHP laeuft im aktuellen <code>harvttp.elf</code> noch als Template-Subset; der echte Zend/PHP-8.5-SAPI-Port ist vorbereitet, wartet aber auf HarvOS-libc, Heap und VFS.</li>
+          <li>TLS, Zertifikate, Request-Limits und DoS-Schutz fehlen.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Empfohlener Ausbau</h2>
+        <ol>
+          <li>Supervisor/Microkernel als erste ELF laden und HarvTTP als User-Task starten.</li>
+          <li>Preemptives Scheduling mit Timer-IRQ und getrennten Stacks einfuehren.</li>
+          <li>HNET-RX/TX-Ringe mit Deskriptoren statt Einzel-DMA-Transfers nutzen.</li>
+          <li>Vollstaendigen TCP/IP-Stack portieren, z. B. smoltcp-artig oder lwIP-artig angepasst an HarvOS.</li>
+          <li>HTTP-Server auf persistentere Verbindungen, sauberes Backpressure und Zero-Copy-Bundle-Sends umbauen.</li>
+          <li>Dateisystemzugriff ueber Supervisor-Service anbieten, nicht direkt im Webserver.</li>
+          <li>Signierte Webroot-Manifeste, MIME-Allowlist und maximale Dateigroessen erzwingen.</li>
+          <li>Watchdog, Crashdump und automatischen Recovery-Boot dokumentieren und testen.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Realistische Zielarchitektur</h2>
+        <p>
+          Fuer HarvOS ist die saubere Endform nicht "Boot-ROM fuehrt fuer immer
+          Server aus", sondern eine gestufte Architektur:
+        </p>
+        <pre><code>Boot-ROM
+  initialisiert minimale Hardware
+  validiert Bootloader/Supervisor
+  laedt Supervisor in IMEM/DMEM
+  sperrt unveraenderliche Codebereiche
+
+Supervisor/Microkernel
+  verwaltet MMU, Tasks, IRQs, HNET, USB, FAT/exFAT
+  laedt Server-ELFs vom Programm-USB
+  ordnet YAML und Datenordner zu
+  startet HarvTTP und weitere Dienste isoliert
+
+HarvTTP
+  laeuft als Task
+  nutzt Netzwerk- und Dateiservices des Supervisors
+  liefert statische, PHP-gerenderte oder spaeter dynamische Inhalte aus</code></pre>
+      </section>
+
+      <div class="footer-nav">
+        <a href="setup.html">Zurueck: Setup</a>
+        <a href="../index.html">Zur Startseite</a>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

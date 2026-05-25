@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarvTTP - Uebersicht</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">HarvTTP Dokumentation</div>
+      <nav class="topnav">
+        <a href="../index.html">Start</a>
+        <a href="../processor/index.html">Prozessor</a>
+        <a href="operation.html">Funktionsweise</a>
+        <a href="setup.html">Setup</a>
+      </nav>
+    </div>
+  </header>
+  <main class="layout">
+    <aside class="side">
+      <h2>HarvTTP</h2>
+      <a href="index.html">Uebersicht</a>
+      <a href="operation.html">Funktionsweise</a>
+      <a href="network.html">Netzwerk</a>
+      <a href="setup.html">Setup</a>
+      <a href="php.html">PHP 8.5</a>
+      <a href="limits.html">Grenzen</a>
+    </aside>
+    <article class="doc">
+      <div class="hero">
+        <h1>HarvTTP Webserver</h1>
+        <p>
+          HarvTTP ist der erste HarvOS-Serverdienst. Er wird als
+          <code>harvttp.elf</code> vom Programm-USB durch das Boot-ROM geladen,
+          erhaelt per DHCP eine IP-Adresse, lauscht auf Port 80 und liefert
+          statische HTML-, CSS-, JavaScript- und Bilddateien aus dem
+          vorab geladenen Webroot-Bundle.
+        </p>
+      </div>
+
+      <section>
+        <h2>Kernmerkmale</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>ELF-basiert</h3>
+            <p>
+              HarvTTP ist kein Host-HTTP-Server. Im Testpfad wird das ELF vom
+              Boot-ROM ueber den HarvOS-Prozessor geladen und gestartet.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Statisches Webroot</h3>
+            <p>
+              Das Boot-ROM liest <code>/confg/harvttp/httproot</code>, baut ein
+              HTTP-Bundle und uebergibt dessen Adresse in den Startparametern.
+              <code>.php</code>-Dateien werden aktuell als serverseitige Templates
+              gerendert; ein echter PHP-8.5/Zend-SAPI-Port liegt unter
+              <code>ports/php85</code>.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Kooperative Threads</h3>
+            <p>
+              Fuenf interne Tasks teilen sich Content-Init, DHCP, TX-Pump,
+              RX/HTTP-Verarbeitung und Watchdog.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Eigener Minimalstack</h3>
+            <p>
+              ARP, IPv4, DHCP, TCP-Handshakes und HTTP/1.0-Antworten laufen im
+              ELF. Es wird aktuell kein Host-Webserver vorgeschaltet.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Einordnung</h2>
+        <p>
+          HarvTTP ist bewusst klein gehalten. Er ist ein funktionaler Nachweis,
+          dass der HarvOS-Bootpfad echte ELF-Anwendungen laden und ueber die
+          HNET-MMIO-Schnittstelle Netzwerkverkehr bedienen kann. Der Server ist
+          noch kein produktionsreifer HTTP-Stack mit TLS, vollstaendigem TCP,
+          Congestion Control oder Dateisystem-Live-Zugriff.
+        </p>
+      </section>
+
+      <section>
+        <h2>Dokumentationsseiten</h2>
+        <table>
+          <tr><th>Seite</th><th>Inhalt</th></tr>
+          <tr><td><a href="operation.html">Funktionsweise</a></td><td>Interne Strukturen, Scheduler, HTTP-Bundle, PHP-Templates, Request-Verarbeitung.</td></tr>
+          <tr><td><a href="network.html">Netzwerk</a></td><td>DHCP, ARP, IPv4, TCP, HNET-MMIO und Testnetz.</td></tr>
+          <tr><td><a href="setup.html">Setup</a></td><td>Build, USB-Image-Struktur, Start der Testsuite und Pruefung im Browser.</td></tr>
+          <tr><td><a href="php.html">PHP 8.5</a></td><td>HarvOS-SAPI, Overlay in die PHP-Quelle und Runtime-Blocker.</td></tr>
+          <tr><td><a href="limits.html">Grenzen</a></td><td>Performance, bekannte Risiken und naechste Ausbaustufen.</td></tr>
+        </table>
+      </section>
+
+      <div class="footer-nav">
+        <a href="../processor/security.html">Zurueck: Prozessor Security</a>
+        <a href="operation.html">Weiter: Funktionsweise</a>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

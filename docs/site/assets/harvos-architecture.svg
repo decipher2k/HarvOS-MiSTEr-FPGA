@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="860" viewBox="0 0 1280 860" role="img" aria-labelledby="title desc">
+  <title id="title">HarvOS Systemaufbau</title>
+  <desc id="desc">Schema des HarvOS Bootpfads mit Boot-ROM, Programm-USB, Daten-USB, CPU, IMEM, DMEM, MMIO, HNET und HarvTTP ELF.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#254238"/>
+    </marker>
+    <style>
+      .bg { fill: #f8faf9; }
+      .zone { fill: #ffffff; stroke: #aebfb6; stroke-width: 2; rx: 12; }
+      .zone-title { fill: #183129; font: 700 22px Segoe UI, Arial, sans-serif; }
+      .box { fill: #eef4f1; stroke: #7fa095; stroke-width: 2; rx: 8; }
+      .box2 { fill: #fff3d6; stroke: #c4912e; stroke-width: 2; rx: 8; }
+      .box3 { fill: #eaf0ff; stroke: #697fb4; stroke-width: 2; rx: 8; }
+      .box4 { fill: #f2eaf7; stroke: #8c679d; stroke-width: 2; rx: 8; }
+      .label { fill: #16201c; font: 600 16px Segoe UI, Arial, sans-serif; }
+      .small { fill: #40524b; font: 13px Segoe UI, Arial, sans-serif; }
+      .tiny { fill: #40524b; font: 12px Consolas, monospace; }
+      .flow { stroke: #254238; stroke-width: 2.4; fill: none; marker-end: url(#arrow); }
+      .dash { stroke: #61766d; stroke-width: 2; fill: none; stroke-dasharray: 7 6; marker-end: url(#arrow); }
+      .lock { fill: #0b6b5b; }
+    </style>
+  </defs>
+  <rect class="bg" x="0" y="0" width="1280" height="860"/>
+
+  <rect class="zone" x="30" y="36" width="360" height="274"/>
+  <text class="zone-title" x="54" y="72">Programm-USB / Image 0</text>
+  <rect class="box" x="54" y="96" width="300" height="52"/>
+  <text class="label" x="74" y="128">/harvttp.elf</text>
+  <rect class="box" x="54" y="162" width="300" height="52"/>
+  <text class="label" x="74" y="194">/config/harvttp.yaml</text>
+  <rect class="box" x="54" y="228" width="300" height="58"/>
+  <text class="label" x="74" y="254">/confg/harvttp/httproot</text>
+  <text class="small" x="74" y="274">HTML, CSS, JS, Bilder, Unterseiten</text>
+
+  <rect class="zone" x="30" y="336" width="360" height="178"/>
+  <text class="zone-title" x="54" y="372">Daten-USB / Image 1</text>
+  <rect class="box" x="54" y="396" width="300" height="58"/>
+  <text class="label" x="74" y="424">/data/harvttp</text>
+  <text class="small" x="74" y="444">persistente Daten, Logs, Ablage</text>
+  <rect class="box" x="54" y="468" width="300" height="28"/>
+  <text class="small" x="74" y="488">weitere App-Datenordner</text>
+
+  <rect class="zone" x="450" y="36" width="790" height="770"/>
+  <text class="zone-title" x="474" y="72">HarvOS SoC im FPGA / Simulator</text>
+
+  <rect class="box2" x="474" y="102" width="196" height="94"/>
+  <text class="label" x="494" y="132">Secure Boot</text>
+  <text class="small" x="494" y="154">Hash/Signatur-Prototyp</text>
+  <text class="small" x="494" y="174">setzt boot_ok/mpu_lock</text>
+
+  <rect class="box2" x="708" y="102" width="206" height="94"/>
+  <text class="label" x="728" y="132">Boot-ROM</text>
+  <text class="small" x="728" y="154">FAT/exFAT, YAML, ELF32</text>
+  <text class="small" x="728" y="174">Startparameter + Bundle</text>
+
+  <rect class="box3" x="952" y="102" width="234" height="94"/>
+  <text class="label" x="972" y="132">HPS/USB Block Bridge</text>
+  <text class="small" x="972" y="154">2 Images als Blockdevices</text>
+  <text class="small" x="972" y="174">MMIO 0xffff00c0</text>
+
+  <rect class="box" x="474" y="240" width="288" height="178"/>
+  <text class="label" x="494" y="270">CPU Cluster</text>
+  <text class="small" x="494" y="294">2 Harts, RV32I-nahe Pipeline</text>
+  <text class="small" x="494" y="316">FETCH, DECODE, EXEC, MEM, WB</text>
+  <text class="small" x="494" y="338">MMU + MPU + CSRs</text>
+  <text class="tiny" x="494" y="366">reset: 0x00000000</text>
+  <text class="tiny" x="494" y="386">cpu1:  0x000000c0</text>
+
+  <rect class="box4" x="800" y="240" width="170" height="178"/>
+  <text class="label" x="820" y="270">IMEM</text>
+  <text class="small" x="820" y="294">Instruktionsspeicher</text>
+  <text class="small" x="820" y="316">nur Fetch-Pfad</text>
+  <text class="small" x="820" y="338">ELF .text via Loader</text>
+  <text class="tiny" x="820" y="366">default: 256 words = 1 KiB</text>
+  <text class="tiny" x="820" y="386">lock bis Reboot</text>
+
+  <rect class="box4" x="1010" y="240" width="176" height="178"/>
+  <text class="label" x="1030" y="270">DMEM</text>
+  <text class="small" x="1030" y="294">Daten, BSS, Stack</text>
+  <text class="small" x="1030" y="316">Startparameter</text>
+  <text class="small" x="1030" y="338">HTTP Bundle</text>
+  <text class="tiny" x="1030" y="366">base: 0x00000400</text>
+  <text class="tiny" x="1030" y="386">default: 1024 words = 4 KiB</text>
+
+  <rect class="box3" x="474" y="462" width="254" height="132"/>
+  <text class="label" x="494" y="492">IMEM Loader MMIO</text>
+  <text class="small" x="494" y="516">write addr/data/control</text>
+  <text class="small" x="494" y="538">Lock-Bit verhindert Writes</text>
+  <text class="tiny" x="494" y="566">0xffff0030</text>
+
+  <rect class="box3" x="760" y="462" width="198" height="132"/>
+  <text class="label" x="780" y="492">USB Host MMIO</text>
+  <text class="small" x="780" y="516">UTMI/DPDM, DMA</text>
+  <text class="small" x="780" y="538">NAK/STALL/Retry</text>
+  <text class="tiny" x="780" y="566">0xffff0080</text>
+
+  <rect class="box3" x="990" y="462" width="196" height="132"/>
+  <text class="label" x="1010" y="492">HNET MMIO</text>
+  <text class="small" x="1010" y="516">Packet DMA NIC</text>
+  <text class="small" x="1010" y="538">IRQ, RX/TX Status</text>
+  <text class="tiny" x="1010" y="566">0xffff0040</text>
+
+  <rect class="box2" x="474" y="638" width="322" height="112"/>
+  <text class="label" x="494" y="668">harvttp.elf Task</text>
+  <text class="small" x="494" y="692">5 kooperative Threads</text>
+  <text class="small" x="494" y="714">DHCP, RX, TX, Content, Watchdog</text>
+
+  <rect class="box2" x="838" y="638" width="348" height="112"/>
+  <text class="label" x="858" y="668">HarvTTP Webserver</text>
+  <text class="small" x="858" y="692">Port 80, ARP, IPv4, DHCP, TCP, HTTP</text>
+  <text class="small" x="858" y="714">liefert httproot-Bundle aus</text>
+
+  <path class="flow" d="M 390 122 C 500 122 580 128 708 144"/>
+  <path class="flow" d="M 390 426 C 520 426 620 188 708 166"/>
+  <path class="flow" d="M 914 150 L 952 150"/>
+  <path class="flow" d="M 812 196 C 812 222 842 228 858 240"/>
+  <path class="flow" d="M 812 196 C 870 232 1018 204 1088 240"/>
+  <path class="flow" d="M 708 158 C 644 198 616 220 612 240"/>
+  <path class="flow" d="M 708 180 C 654 260 614 398 602 462"/>
+  <path class="flow" d="M 728 526 C 766 492 790 420 826 418"/>
+  <path class="flow" d="M 884 418 C 876 500 790 612 664 638"/>
+  <path class="flow" d="M 1098 418 C 1088 512 996 620 958 638"/>
+  <path class="flow" d="M 796 694 L 838 694"/>
+  <path class="dash" d="M 970 328 L 1010 328"/>
+  <path class="dash" d="M 762 330 L 800 330"/>
+  <path class="dash" d="M 602 418 L 602 462"/>
+
+  <rect class="lock" x="918" y="370" width="32" height="26" rx="5"/>
+  <rect x="926" y="356" width="16" height="22" rx="8" fill="none" stroke="#0b6b5b" stroke-width="5"/>
+  <text class="small" x="824" y="442">hardwareseitiger IMEM-Lock nach ELF-Load</text>
+
+  <text class="small" x="474" y="786">Hinweis: physische USB/NIC-Anbindung und PHY-Timing sind plattformabhaengig; im Verilator-Testpfad werden HPS-Images und Npcap/TAP genutzt.</text>
+</svg>

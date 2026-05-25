@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarvOS Dokumentation</title>
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">HarvOS Dokumentation</div>
+      <nav class="topnav">
+        <a href="processor/index.html">Prozessor</a>
+        <a href="processor/isa.html">ISL</a>
+        <a href="processor/boot.html">Boot-ROM</a>
+        <a href="harvttp/index.html">HarvTTP</a>
+        <a href="harvttp/php.html">PHP 8.5</a>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <div class="hero">
+      <h1>HarvOS Architektur- und Serverdokumentation</h1>
+      <p>
+        Diese statische HTML-Dokumentation beschreibt den aktuellen HarvOS-Prozessor,
+        die Instruktionsmenge, Speicher- und MMIO-Architektur, Boot-ROM/ELF-Loader
+        sowie den HarvTTP-Webserver, der als ELF-Image vom Programm-USB geladen wird.
+      </p>
+    </div>
+
+    <section class="schema">
+      <img src="assets/harvos-architecture.svg" alt="HarvOS Systemaufbau mit CPU, Boot-ROM, USB Images, IMEM, DMEM und HarvTTP">
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>Prozessor</h2>
+        <p>
+          CPU, Privilegienmodell, Harvard-Trennung, MMU/MPU, CSRs, Interrupts,
+          MMIO-Geraete und Bootpfad.
+        </p>
+        <p><a href="processor/index.html">Zur Prozessor-Dokumentation</a></p>
+      </article>
+      <article class="card">
+        <h2>ISL</h2>
+        <p>
+          Instruction Set Listing fuer die RV32I-nahe HarvOS-ISA einschliesslich
+          Custom-0-Instruktionen, Traps und CSR-Verhalten.
+        </p>
+        <p><a href="processor/isa.html">Zur ISL-Seite</a></p>
+      </article>
+      <article class="card">
+        <h2>HarvTTP</h2>
+        <p>
+          Aufbau, Boot-Integration, DHCP, ARP, IPv4/TCP/HTTP, statische Assets,
+          Threads, Setup, PHP-Port und Grenzen.
+        </p>
+        <p><a href="harvttp/index.html">Zur HarvTTP-Dokumentation</a></p>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

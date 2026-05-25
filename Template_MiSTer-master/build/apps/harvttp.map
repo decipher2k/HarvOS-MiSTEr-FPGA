@@ -1,0 +1,85 @@
+Archive member included to satisfy reference by file (symbol)
+
+c:/sysgcc/risc-v/bin/../lib/gcc/riscv64-unknown-elf/10.1.0/rv32i/ilp32\libgcc.a(muldi3.o)
+                              C:\Users\dennis\Documents\HarvOS\Template_MiSTer-master\build\apps\harvttp_main.o (__mulsi3)
+
+Discarded input sections
+
+ .comment       0x0000000000000000       0x13 C:\Users\dennis\Documents\HarvOS\Template_MiSTer-master\build\apps\harvttp_main.o
+ .riscv.attributes
+                0x0000000000000000       0x1c C:\Users\dennis\Documents\HarvOS\Template_MiSTer-master\build\apps\harvttp_main.o
+ .riscv.attributes
+                0x0000000000000000       0x1a c:/sysgcc/risc-v/bin/../lib/gcc/riscv64-unknown-elf/10.1.0/rv32i/ilp32\libgcc.a(muldi3.o)
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+APP              0x0000000000100000 0x0000000000080000 xrw
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+LOAD C:\Users\dennis\Documents\HarvOS\Template_MiSTer-master\build\apps\harvttp_main.o
+LOAD c:/sysgcc/risc-v/bin/../lib/gcc/riscv64-unknown-elf/10.1.0/rv32i/ilp32\libgcc.a
+                0x0000000000100000                . = ORIGIN (APP)
+
+.text           0x0000000000100000     0x535c
+ *(.text.start)
+ .text.start    0x0000000000100000        0xc C:\Users\dennis\Documents\HarvOS\Template_MiSTer-master\build\apps\harvttp_main.o
+                0x0000000000100000                _start
+ *(.text*)
+ .text          0x000000000010000c     0x532c C:\Users\dennis\Documents\HarvOS\Template_MiSTer-master\build\apps\harvttp_main.o
+                0x000000000010000c                harvttp_trap_entry
+                0x0000000000102b14                harvttp_trap_dispatch
+                0x0000000000102b74                harvttp_main
+ .text          0x0000000000105338       0x24 c:/sysgcc/risc-v/bin/../lib/gcc/riscv64-unknown-elf/10.1.0/rv32i/ilp32\libgcc.a(muldi3.o)
+                0x0000000000105338                __mulsi3
+
+.rodata         0x0000000000106000      0x502
+ *(.rodata*)
+ .rodata.str1.4
+                0x0000000000106000      0x3f1 C:\Users\dennis\Documents\HarvOS\Template_MiSTer-master\build\apps\harvttp_main.o
+ *fill*         0x00000000001063f1        0x3 
+ .rodata        0x00000000001063f4      0x10e C:\Users\dennis\Documents\HarvOS\Template_MiSTer-master\build\apps\harvttp_main.o
+
+.rela.dyn       0x0000000000106504        0x0
+ .rela.text.start
+                0x0000000000106504        0x0 C:\Users\dennis\Documents\HarvOS\Template_MiSTer-master\build\apps\harvttp_main.o
+
+.data           0x0000000000107000        0x0
+                0x0000000000107800                PROVIDE (__global_pointer$ = (. + 0x800))
+ *(.sdata*)
+ *(.data*)
+ .data          0x0000000000107000        0x0 C:\Users\dennis\Documents\HarvOS\Template_MiSTer-master\build\apps\harvttp_main.o
+ .data          0x0000000000107000        0x0 c:/sysgcc/risc-v/bin/../lib/gcc/riscv64-unknown-elf/10.1.0/rv32i/ilp32\libgcc.a(muldi3.o)
+
+.bss            0x0000000000107000    0x1b008
+                0x0000000000107000                __bss_start = .
+ *(.sbss*)
+ *(.bss*)
+ .bss           0x0000000000107000    0x1b008 C:\Users\dennis\Documents\HarvOS\Template_MiSTer-master\build\apps\harvttp_main.o
+ .bss           0x0000000000122008        0x0 c:/sysgcc/risc-v/bin/../lib/gcc/riscv64-unknown-elf/10.1.0/rv32i/ilp32\libgcc.a(muldi3.o)
+ *(COMMON)
+                0x0000000000122008                __bss_end = .
+
+/DISCARD/
+ *(.comment*)
+ *(.riscv.attributes*)
+ *(.note*)
+OUTPUT(C:\Users\dennis\Documents\HarvOS\Template_MiSTer-master\build\apps\harvttp.elf elf32-littleriscv)
+
+.debug_line     0x0000000000000000       0xad
+ .debug_line    0x0000000000000000       0xad c:/sysgcc/risc-v/bin/../lib/gcc/riscv64-unknown-elf/10.1.0/rv32i/ilp32\libgcc.a(muldi3.o)
+
+.debug_info     0x0000000000000000       0x26
+ .debug_info    0x0000000000000000       0x26 c:/sysgcc/risc-v/bin/../lib/gcc/riscv64-unknown-elf/10.1.0/rv32i/ilp32\libgcc.a(muldi3.o)
+
+.debug_abbrev   0x0000000000000000       0x14
+ .debug_abbrev  0x0000000000000000       0x14 c:/sysgcc/risc-v/bin/../lib/gcc/riscv64-unknown-elf/10.1.0/rv32i/ilp32\libgcc.a(muldi3.o)
+
+.debug_aranges  0x0000000000000000       0x20
+ .debug_aranges
+                0x0000000000000000       0x20 c:/sysgcc/risc-v/bin/../lib/gcc/riscv64-unknown-elf/10.1.0/rv32i/ilp32\libgcc.a(muldi3.o)
+
+.debug_str      0x0000000000000000       0xbe
+ .debug_str     0x0000000000000000       0xbe c:/sysgcc/risc-v/bin/../lib/gcc/riscv64-unknown-elf/10.1.0/rv32i/ilp32\libgcc.a(muldi3.o)

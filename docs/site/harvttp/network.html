@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarvTTP - Netzwerk</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">HarvTTP Netzwerk</div>
+      <nav class="topnav">
+        <a href="../index.html">Start</a>
+        <a href="index.html">HarvTTP</a>
+        <a href="operation.html">Funktionsweise</a>
+        <a href="setup.html">Setup</a>
+      </nav>
+    </div>
+  </header>
+  <main class="layout">
+    <aside class="side">
+      <h2>HarvTTP</h2>
+      <a href="index.html">Uebersicht</a>
+      <a href="operation.html">Funktionsweise</a>
+      <a href="network.html">Netzwerk</a>
+      <a href="setup.html">Setup</a>
+      <a href="limits.html">Grenzen</a>
+    </aside>
+    <article class="doc">
+      <div class="hero">
+        <h1>Netzwerkpfad</h1>
+        <p>
+          HarvTTP spricht nicht ueber einen Host-Socket. Der Server arbeitet
+          ueber die HNET-MMIO-Netzwerkkarte des HarvOS-SoC. Im Verilator-Testpfad
+          werden die Ethernet-Frames zur Host-Seite ueber Npcap/TAP/Wintun-nahe
+          Infrastruktur ausgeleitet.
+        </p>
+      </div>
+
+      <section>
+        <h2>HNET-Ablauf</h2>
+        <ol>
+          <li>HarvTTP setzt <code>HARVOS_NET_CTRL_ENABLE</code> und konfiguriert IRQs.</li>
+          <li>Die MAC-Adresse wird in <code>MAC_LO</code>/<code>MAC_HI</code> geschrieben.</li>
+          <li>Empfang: Wenn <code>RX_VALID</code> gesetzt ist, startet HarvTTP <code>RX_START</code>.</li>
+          <li>HNET schreibt den Frame ins DMA-Fenster; HarvTTP liest <code>FRAME_LEN</code>.</li>
+          <li>Senden: HarvTTP kopiert einen Frame ins DMA-Fenster und startet <code>TX_START</code>.</li>
+          <li>Der TX-Pump-Thread leert bei Bedarf die 64-Frame-Queue.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Protokollstack</h2>
+        <table>
+          <tr><th>Schicht</th><th>Implementiert</th><th>Grenze</th></tr>
+          <tr><td>Ethernet II</td><td>MAC-Adressen, EtherType <code>0x0800</code> und <code>0x0806</code>.</td><td>Kein VLAN, kein Multicast-Management.</td></tr>
+          <tr><td>ARP</td><td>Antwortet auf Requests fuer die eigene DHCP-IP.</td><td>Keine ARP-Cache-Policy fuer ausgehende Client-Verbindungen.</td></tr>
+          <tr><td>IPv4</td><td>Minimaler Header, Checksumme, TTL 64, Don't Fragment.</td><td>Keine Fragmentierung/Reassembly.</td></tr>
+          <tr><td>UDP/DHCP</td><td>Discover, Offer, Request, Ack mit XID-Pruefung.</td><td>Kein Lease-Renewal nach voller DHCP-Spezifikation.</td></tr>
+          <tr><td>TCP</td><td>SYN/SYN-ACK, Sequenztracking, GET-Antwort, FIN/RST-Behandlung.</td><td>Keine vollstaendige Retransmission, Congestion Control oder Window Scaling.</td></tr>
+          <tr><td>HTTP</td><td>HTTP/1.0 GET, Content-Type, Content-Length, Connection close.</td><td>Keine Keep-Alive-Verbindungen, kein TLS, keine dynamischen Methoden.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>DHCP-Zustandsmaschine</h2>
+        <pre><code>state DISCOVER:
+  send DHCPDISCOVER
+  wait for OFFER with matching XID
+
+state REQUEST:
+  send DHCPREQUEST for offered IP
+  wait for ACK with matching XID
+
+state ACK:
+  net.bound = true
+  HTTP traffic on port 80 is accepted</code></pre>
+        <p>
+          Sobald der Server gebunden ist, protokolliert er die IP ueber den
+          Audit/IPC-Pfad. In der aktuellen Testumgebung war die erreichbare
+          Adresse zuletzt <code>192.168.8.231</code>; die tatsaechliche IP ist
+          aber Ergebnis des jeweiligen DHCP-Testnetzes.
+        </p>
+      </section>
+
+      <section>
+        <h2>TX-Optimierung</h2>
+        <p>
+          Die aktuelle Version nutzt ein hybrides Sendeverhalten: Wenn HNET
+          <code>TX_READY</code> meldet und die Queue leer ist, sendet HarvTTP
+          sofort. Andernfalls wird der Frame in eine 64-Slot-Queue kopiert und
+          durch den TX-Thread abgearbeitet. Das reduziert Latenz bei niedriger
+          Last und verhindert, dass kurze Antwortbursts sofort verloren gehen.
+        </p>
+      </section>
+
+      <section>
+        <h2>Browserzugriff</h2>
+        <p>
+          Der Browser muss die DHCP-IP des HarvOS-Servers erreichen. <code>127.0.0.1</code>
+          ist nur dann korrekt, wenn ein expliziter Port-Forward oder Proxy
+          eingerichtet wurde. Fuer den CPU-echten Pfad ist die IP aus dem
+          HarvOS-Testnetz zu verwenden, beispielsweise <code>http://192.168.8.231/</code>.
+        </p>
+      </section>
+
+      <div class="footer-nav">
+        <a href="operation.html">Zurueck: Funktionsweise</a>
+        <a href="setup.html">Weiter: Setup</a>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

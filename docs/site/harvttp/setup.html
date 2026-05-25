@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarvTTP - Setup</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">HarvTTP Setup</div>
+      <nav class="topnav">
+        <a href="../index.html">Start</a>
+        <a href="index.html">HarvTTP</a>
+        <a href="network.html">Netzwerk</a>
+        <a href="../processor/boot.html">Boot-ROM</a>
+      </nav>
+    </div>
+  </header>
+  <main class="layout">
+    <aside class="side">
+      <h2>HarvTTP</h2>
+      <a href="index.html">Uebersicht</a>
+      <a href="operation.html">Funktionsweise</a>
+      <a href="network.html">Netzwerk</a>
+      <a href="setup.html">Setup</a>
+      <a href="php.html">PHP 8.5</a>
+      <a href="limits.html">Grenzen</a>
+    </aside>
+    <article class="doc">
+      <div class="hero">
+        <h1>Build, USB-Images und Start</h1>
+        <p>
+          Diese Seite beschreibt den Projektpfad, in dem HarvTTP als ELF gebaut,
+          auf das Programm-USB-Image gelegt und anschliessend vom HarvOS-Boot-ROM
+          im Prozessor gestartet wird.
+        </p>
+      </div>
+
+      <section>
+        <h2>Projektdateien</h2>
+        <table>
+          <tr><th>Pfad</th><th>Zweck</th></tr>
+          <tr><td><code>software/user/harvttp/main.c</code></td><td>HarvTTP-Implementierung.</td></tr>
+          <tr><td><code>software/bootrom/harvos_usb_elf_bootrom.c</code></td><td>Boot-ROM, FAT/exFAT/YAML/ELF-Ladepfad und HTTP-Bundle-Erzeugung.</td></tr>
+          <tr><td><code>software/include/harvos_abi.h</code></td><td>ABI, Startparameter, MMIO-Adressen und HTTP-Bundle-Strukturen.</td></tr>
+          <tr><td><code>rtl/harvos_soc.sv</code></td><td>CPU, IMEM/DMEM, HNET, USB, HPS-Block und Loader-Integration.</td></tr>
+          <tr><td><code>scripts/build_harvttp.ps1</code></td><td>Baut <code>harvttp.elf</code>.</td></tr>
+          <tr><td><code>scripts/build_usb_images.ps1</code></td><td>Erzeugt Programm- und Daten-USB-Images.</td></tr>
+          <tr><td><code>scripts/build_php85_harvos.ps1</code></td><td>Bereitet den echten PHP-8.5-HarvOS-SAPI-Port in der lokalen PHP-Quelle vor.</td></tr>
+          <tr><td><code>scripts/start_harvttp_usb_boot_server.ps1</code></td><td>Startet den Verilator/HarvOS-Testpfad mit HarvTTP.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>USB-Layout</h2>
+        <pre><code># Programm-USB
+/
+  harvttp.elf
+  config/
+    harvttp.yaml
+  confg/
+    harvttp/
+      httproot/
+        index.html
+        about.html
+        style.css
+        app.js
+        img/
+          ...
+
+# Daten-USB
+/
+  data/
+    harvttp/
+      logs/
+      state/</code></pre>
+      </section>
+
+      <section>
+        <h2>Typischer Build-Ablauf</h2>
+        <pre><code>powershell -ExecutionPolicy Bypass -File .\scripts\build_harvttp.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\build_usb_images.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\build_usb_elf_bootrom.ps1</code></pre>
+        <p>
+          Danach enthaelt das Programm-USB-Image das ELF und die Webroot-Dateien.
+          Das Boot-ROM-Image enthaelt den Loader, der beim CPU-Reset ausgefuehrt
+          wird.
+        </p>
+      </section>
+
+      <section>
+        <h2>PHP-8.5-Port vorbereiten</h2>
+        <pre><code>powershell -ExecutionPolicy Bypass -File .\scripts\build_php85_harvos.ps1 -Overlay</code></pre>
+        <p>
+          Dieser Schritt kopiert die HarvOS-SAPI nach
+          <code>C:\Users\dennis\Downloads\php-8.5.6-src\sapi\harvos</code>.
+          Das ist der echte Zend-Port-Andockpunkt. Ein Link in
+          <code>harvttp.elf</code> ist erst nach HarvOS-libc, Heap und VFS-Streams
+          sinnvoll.
+        </p>
+      </section>
+
+      <section>
+        <h2>Start der Testsuite</h2>
+        <pre><code>powershell -ExecutionPolicy Bypass -File .\scripts\start_harvttp_usb_boot_server.ps1</code></pre>
+        <p>
+          Der Startpfad bootet den HarvOS-Prozessor, laedt das ELF vom Programm-USB,
+          bindet die Netzwerkschnittstelle an den Testpfad und wartet auf DHCP.
+          Wenn Npcap/TAP korrekt eingerichtet ist, kann die vom Server bezogene
+          IP im Browser aufgerufen werden.
+        </p>
+      </section>
+
+      <section>
+        <h2>Pruefung</h2>
+        <table>
+        <tr><th>Test</th><th>Erwartung</th></tr>
+        <tr><td><code>GET /</code></td><td><code>HTTP/1.0 200 OK</code> und <code>index.html</code>.</td></tr>
+        <tr><td><code>GET /about.html</code></td><td>Unterseite aus dem Bundle.</td></tr>
+        <tr><td><code>GET /info.php</code></td><td>Gerenderte PHP-Template-Seite, kein PHP-Quelltext.</td></tr>
+        <tr><td><code>GET /style.css</code></td><td><code>Content-Type: text/css</code>.</td></tr>
+          <tr><td><code>GET /app.js</code></td><td><code>Content-Type: application/javascript</code>.</td></tr>
+          <tr><td><code>GET /img/name.png</code></td><td>Bilddatei, sofern im Bundle vorhanden.</td></tr>
+          <tr><td><code>GET /nicht-da</code></td><td><code>HTTP/1.0 404 Not Found</code>.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Stoppen</h2>
+        <pre><code>powershell -ExecutionPolicy Bypass -File .\scripts\stop_harvttp_usb_boot_server.ps1</code></pre>
+      </section>
+
+      <section>
+        <h2>Fehlersuche</h2>
+        <table>
+          <tr><th>Symptom</th><th>Pruefung</th></tr>
+          <tr><td>Browser meldet Timeout</td><td>DHCP-IP pruefen, Route/TAP/Npcap pruefen, HNET-Linkstatus pruefen.</td></tr>
+          <tr><td><code>127.0.0.1</code> verweigert Verbindung</td><td>Das ist nicht automatisch HarvTTP. Die echte Server-IP aus DHCP verwenden.</td></tr>
+          <tr><td>404 fuer bekannte Datei</td><td>Datei muss unter <code>/confg/harvttp/httproot</code> im Programm-USB liegen und in das Bundle passen.</td></tr>
+          <tr><td>Boot bleibt haengen</td><td>Programm-USB braucht <code>harvttp.elf</code> und <code>/config/harvttp.yaml</code>; Daten-USB braucht <code>/data/harvttp</code>.</td></tr>
+          <tr><td>Hohe Latenz unter Last</td><td>Siehe Grenzen: Minimal-TCP, kleine DMA-Fenster und kooperatives Scheduling.</td></tr>
+        </table>
+      </section>
+
+      <div class="footer-nav">
+        <a href="network.html">Zurueck: Netzwerk</a>
+        <a href="limits.html">Weiter: Grenzen</a>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

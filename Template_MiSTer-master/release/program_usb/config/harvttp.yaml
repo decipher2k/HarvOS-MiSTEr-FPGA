@@ -1,0 +1,4 @@
+name: harvttp
+services: [net, storage, ipc, dma, mmio]
+memory: 65536
+debug: false

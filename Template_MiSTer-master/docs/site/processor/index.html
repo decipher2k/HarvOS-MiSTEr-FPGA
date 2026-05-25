@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarvOS Prozessor - Uebersicht</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">HarvOS Prozessor</div>
+      <nav class="topnav">
+        <a href="../index.html">Start</a>
+        <a href="architecture.html">Architektur</a>
+        <a href="isa.html">ISL</a>
+        <a href="boot.html">Boot</a>
+        <a href="../harvttp/index.html">HarvTTP</a>
+      </nav>
+    </div>
+  </header>
+  <main class="layout">
+    <aside class="side">
+      <h2>Prozessor</h2>
+      <a href="index.html">Uebersicht</a>
+      <a href="architecture.html">Architektur</a>
+      <a href="isa.html">ISL / ISA</a>
+      <a href="memory.html">Speicher</a>
+      <a href="boot.html">Boot-ROM</a>
+      <a href="mmio.html">MMIO</a>
+      <a href="security.html">Security</a>
+    </aside>
+    <article class="doc">
+      <div class="hero">
+        <h1>Prozessoruebersicht</h1>
+        <p>
+          Der aktuelle HarvOS-Prozessor ist ein 32-Bit, RISC-V-aehnlicher
+          Bare-Metal-Prozessor mit Harvard-Trennung, MMU/MPU, Supervisor-CSRs,
+          zwei Harts im SoC, USB/HPS-Block-I/O, HNET-Netzwerk-MMIO und einem
+          Boot-ROM-Pfad zum Laden von ELF-Anwendungen.
+        </p>
+      </div>
+
+      <section>
+        <h2>CPU-Architekturschema</h2>
+        <div class="schema">
+          <img src="../assets/harvos-cpu-architecture.svg" alt="HarvOS CPU Architektur mit Boot-ROM, MMU, MPU, Harvard-Trennung und immutable IMEM">
+        </div>
+      </section>
+
+      <section>
+        <h2>Kurzprofil</h2>
+        <table>
+          <tr><th>Eigenschaft</th><th>Aktueller Stand</th></tr>
+          <tr><td>Registerbreite</td><td><code>HARVOS_XLEN = 32</code>, 32 allgemeine Integer-Register mit RISC-V-kompatibler Nummerierung; <code>x0</code> ist fest null.</td></tr>
+          <tr><td>ISA-Basis</td><td>RV32I-nahe Instruktionsmenge fuer die auf der ISL-Seite gelisteten Opcodes plus exakt drei Custom-0-Operationen: <code>CLRREG</code>, <code>CLRMEM</code>, <code>ENTROPY</code>.</td></tr>
+          <tr><td>RISC-V-Abgrenzung</td><td>Keine vollstaendige RISC-V-Plattform: keine <code>M</code>/<code>A</code>/<code>C</code>-Extensions, keine PMP-CSRs, lokales CSR-Layout und HarvOS-spezifische MMU/MPU-Regeln.</td></tr>
+          <tr><td>Pipeline-Modell</td><td>Mehrzyklische Zustandsmaschine: <code>FETCH</code>, <code>DECODE</code>, <code>EXEC</code>, <code>MEM</code>, <code>WB</code>, <code>CLRMEM</code>.</td></tr>
+          <tr><td>Harts</td><td>Zwei Instanzen von <code>harvos_cpu</code> in <code>harvos_soc</code>, angebunden ueber <code>harvos_smp_bus2</code>.</td></tr>
+          <tr><td>Reset</td><td>Hart 0 startet bei <code>0x00000000</code>, Hart 1 im SoC bei <code>0x000000c0</code>.</td></tr>
+          <tr><td>Trap-Vektor</td><td>Im SoC auf <code>0x000000a0</code> parametriert; CPU-Default ist <code>0x00000080</code>.</td></tr>
+          <tr><td>Speichermodell</td><td>Harvard: separater Fetch-Pfad in IMEM und separater Datenpfad in DMEM/MMIO.</td></tr>
+          <tr><td>Privilegien</td><td><code>PRIV_U</code>, <code>PRIV_S</code>, <code>PRIV_M</code> als interne Encodings; Boot und Supervisor laufen in S/M-Kontexten, Apps koennen per <code>SRET</code> in User Mode starten.</td></tr>
+          <tr><td>MMU/MPU</td><td>Fetch-MMU mit 32 TLB-Eintraegen, Daten-MMU mit 64 TLB-Eintraegen, ASID-getaggte L1/L0-Page-Tables fuer User-Tasks, feste HarvOS-MPU fuer IMEM/DMEM/MMIO und Harvard-Verletzungen; nicht RISC-V PMP.</td></tr>
+          <tr><td>DMA</td><td>DMA-Fenster in DMEM, durch <code>harvos_dma_iommu</code> begrenzt.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Scope und Annahmen</h2>
+        <p>
+          Diese Dokumentation beschreibt den im Projekt vorhandenen RTL- und
+          Softwarestand. Nicht alle Module sind bereits eine produktionsfertige
+          CPU-Plattform: Caches, Kohaerenz, Kernelmodell und Secure-Boot-Block
+          dienen teilweise als Prototypen, Test-Hooks oder beobachtbare Modelle.
+        </p>
+        <div class="warning">
+          <strong>Wichtige Annahme:</strong> Die exakte Zielplattform, das
+          physische USB-PHY, echte NIC-MAC/PHY-Integration, Board-Taktung,
+          Reset-Sequencing und externe DDR-Anbindung sind plattformabhaengig.
+          Diese Seiten trennen deshalb bewusst zwischen implementiertem
+          HarvOS-SoC-Verhalten und Integrationsaufgaben fuer ein konkretes Board.
+        </div>
+      </section>
+
+      <section>
+        <h2>Dokumentationsseiten</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Architektur</h3>
+            <p>CPU-Cluster, Bus, Speicher, Loader und Geraete im Gesamtbild.</p>
+            <p><a href="architecture.html">Oeffnen</a></p>
+          </div>
+          <div class="card">
+            <h3>ISL / ISA</h3>
+            <p>Instruction Set Listing mit Formaten, Operationen und Trap-Regeln.</p>
+            <p><a href="isa.html">Oeffnen</a></p>
+          </div>
+          <div class="card">
+            <h3>Boot-ROM</h3>
+            <p>USB-Image-Erkennung, YAML-Zuordnung, ELF-Load, Startparameter und IMEM-Lock.</p>
+            <p><a href="boot.html">Oeffnen</a></p>
+          </div>
+          <div class="card">
+            <h3>MMIO</h3>
+            <p>Registerkarten fuer IMEM-Loader, USB, HPS-Block und HNET.</p>
+            <p><a href="mmio.html">Oeffnen</a></p>
+          </div>
+        </div>
+      </section>
+
+      <div class="footer-nav">
+        <span></span>
+        <a href="architecture.html">Weiter: Architektur</a>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

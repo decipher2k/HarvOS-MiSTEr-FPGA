@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarvOS Prozessor - Speicher</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">HarvOS Speicherarchitektur</div>
+      <nav class="topnav">
+        <a href="../index.html">Start</a>
+        <a href="index.html">Prozessor</a>
+        <a href="boot.html">Boot</a>
+        <a href="../harvttp/index.html">HarvTTP</a>
+      </nav>
+    </div>
+  </header>
+  <main class="layout">
+    <aside class="side">
+      <h2>Prozessor</h2>
+      <a href="index.html">Uebersicht</a>
+      <a href="architecture.html">Architektur</a>
+      <a href="isa.html">ISL / ISA</a>
+      <a href="memory.html">Speicher</a>
+      <a href="boot.html">Boot-ROM</a>
+      <a href="mmio.html">MMIO</a>
+      <a href="security.html">Security</a>
+    </aside>
+    <article class="doc">
+      <div class="hero">
+        <h1>Speicher, MMU und Harvard-Schutz</h1>
+        <p>
+          HarvOS trennt Instruktionen und Daten bereits auf SoC-Ebene. Der
+          Boot-ROM-Loader nutzt einen kontrollierten IMEM-Schreibpfad, waehrend
+          laufende Anwendungen ausschliesslich DMEM und MMIO sehen.
+        </p>
+      </div>
+
+      <section>
+        <h2>Hardware-Trennung im Core</h2>
+        <div class="schema">
+          <img src="../assets/harvos-cpu-architecture.svg" alt="CPU-interne Harvard-Trennung mit IMEM-Lock">
+        </div>
+      </section>
+
+      <section>
+        <h2>Adressraeume</h2>
+        <table>
+          <tr><th>Bereich</th><th>Adresse / Parameter</th><th>Nutzung</th></tr>
+          <tr><td>IMEM</td><td><code>0x00000000</code> bis <code>0x000003ff</code> im aktuellen SoC-Default: <code>IMEM_WORDS = 256</code>, also 256 Worte / 1024 Byte.</td><td>Instruktionen, Boot-ROM und geladene ELF-Textsegmente.</td></tr>
+          <tr><td>DMEM</td><td><code>D_RAM_BASE = 0x00000400</code> bis <code>0x000013ff</code> im aktuellen SoC-Default: <code>DMEM_WORDS = 1024</code>, also 1024 Worte / 4096 Byte.</td><td>Daten, BSS, Stack, Startparameter, HTTP-Bundle, DMA-Fenster.</td></tr>
+          <tr><td>DMA-Fenster</td><td><code>0x00000500</code> bis <code>0x00000cff</code>, 2048 Byte.</td><td>USB- und HNET-DMA-Transferbereich.</td></tr>
+          <tr><td>MMIO</td><td><code>0xffff0000</code> bis <code>0xffff00ff</code>.</td><td>Debug, IMEM-Loader, HNET, USB, HPS-Block.</td></tr>
+          <tr><td>Boot-ROM-App-Plan</td><td><code>BOOT_APP_LOAD_BASE = 0x00100000</code>, <code>BOOT_APP_STACK_TOP = 0x00178000</code> in der Boot-ROM-Software.</td><td>Geplanter App-Adressbereich fuer groessere Konfigurationen; die kleine RTL-Defaultkonfiguration muss dafuer vergroessert oder anders gemappt werden.</td></tr>
+        </table>
+        <div class="note">
+          <code>IMEM_WORDS</code> und <code>DMEM_WORDS</code> sind Synthese-/Testbench-Parameter aus
+          <code>harvos_soc.sv</code>, keine ISA-Maximalwerte. Die Zahl <code>256</code>
+          beim IMEM bedeutet 256 32-Bit-Worte und damit 1024 Byte, nicht 256 Byte.
+          DMEM ist im aktuellen Default 4096 Byte gross.
+        </div>
+      </section>
+
+      <section>
+        <h2>Zugriffspipeline</h2>
+        <p>
+          Jeder Speicherzugriff laeuft in zwei Schutzstufen ab. Die MMU nimmt
+          zuerst die virtuelle Adresse aus dem Fetch- oder Datenpfad entgegen,
+          erzeugt daraus eine physische Adresse und bewertet die PTE-artigen
+          Rechte. Danach prueft die MPU diese physische Adresse gegen die festen
+          HarvOS-Regionen. Ein Zugriff muss beide Stufen bestehen, bevor IMEM,
+          DMEM oder ein MMIO-Block antwortet.
+        </p>
+        <pre><code>Fetch:      PC        -> Fetch-MMU -> Fetch-MPU -> IMEM read
+Load/Store: ALU addr  -> Data-MMU  -> Data-MPU  -> DMEM/MMIO bus</code></pre>
+        <table>
+          <tr><th>Stufe</th><th>Aufgabe</th><th>Ergebnis</th></tr>
+          <tr><td>Adressbildung</td><td>PC fuer Fetch, <code>rs1 + imm</code> fuer Load/Store, <code>clr_addr</code> fuer <code>CLRMEM</code>.</td><td>Virtuelle Adresse und Zugriffstyp.</td></tr>
+          <tr><td>MMU</td><td>TLB-Lookup, regionaler Page-Walk, PTE-Flag-Pruefung, User-/Capability-Pruefung, W^X-Regel.</td><td>Physische Adresse, PTE-Debugwert, MMU-Allow oder MMU-Cause.</td></tr>
+          <tr><td>MPU</td><td>Feste physische Region pruefen: IMEM/I-ROM, DMEM, MMIO und Lock-Zustand.</td><td>Endgueltiges Allow, MMIO-Markierung oder Trap-Cause.</td></tr>
+          <tr><td>SoC-Decode</td><td>Adresse auf IMEM, DMEM, IMEM-Loader, HNET, USB, HPS-Block oder Debug-MMIO routen.</td><td>Datenwort, Byte-Write oder Default-Nullwert.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>MMU</h2>
+        <p>
+          Die CPU instanziiert zwei MMUs: eine fuer Fetch und eine fuer Daten.
+          Beide modellieren PTE-Flags <code>V</code>, <code>R</code>,
+          <code>W</code>, <code>X</code>, <code>U</code>, <code>G</code>,
+          <code>A</code> und <code>D</code>. Wenn <code>satp[19:0]</code>
+          eine Page-Table-PPN enthaelt, liest der Walker zwei Ebenen aus DMEM:
+          L1-PTE aus der Root-Page, danach L0-PTE aus der dort referenzierten
+          L0-Page. Wenn die PPN null ist, bleibt der feste ASID-Slot-Fallback
+          fuer Boot-/Demo-Pfade aktiv. Das <code>SATP_MODE_BIT</code> ist
+          gesetzt; <code>satp[29:22]</code> dient als 8-Bit-ASID fuer den TLB.
+        </p>
+        <table>
+          <tr><th>Pfad</th><th>TLB</th><th>Besonderheit</th></tr>
+          <tr><td>Fetch-MMU</td><td>32 Eintraege</td><td>Nur Instruktionszugriffe; W^X-Verletzungen werden als Fetch-Fehler behandelt.</td></tr>
+          <tr><td>Data-MMU</td><td>64 Eintraege</td><td>Load/Store-Pruefung, User/Supervisor-Policy, W^X-Schutz.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>MMU-Ablauf im Detail</h2>
+        <ol>
+          <li>Die MMU bekommt <code>fetch</code>, <code>load</code> oder <code>store</code>, die virtuelle Adresse, <code>satp</code>, den aktuellen Privilegienmodus und <code>scaps</code>.</li>
+          <li>Der TLB sucht mit virtueller Adresse und ASID aus <code>satp[29:22]</code>. Bei Treffer kommen physische Adresse und Flags direkt aus dem TLB.</li>
+          <li>Bei Miss liest der Walker bei gesetzter Page-Table-PPN die L1/L0-PTEs aus DMEM. Ohne PPN bewertet er die Adresse gegen die festen HarvOS-Regionen. Gueltige Walk-Ergebnisse werden in den TLB gefuellt.</li>
+          <li>Die MMU prueft <code>V</code> und <code>A</code>. Fehlt eines davon, bleibt <code>allow=0</code> und die vom Walker gesetzte Cause wird weitergereicht.</li>
+          <li>Wenn <code>W</code> und <code>X</code> gleichzeitig gesetzt sind, setzt die MMU <code>wx_fault</code> und verweigert den Zugriff.</li>
+          <li>Im User Mode muss das Mapping <code>U</code> tragen. Wenn der Zugriff danach noch erlaubt ist, muss zusaetzlich <code>scaps[0]</code> fuer normale Speicherbereiche oder <code>scaps[4]</code>/<code>HARVOS_CAP_MMIO</code> fuer MMIO gesetzt sein.</li>
+          <li>Fetch braucht <code>X</code> und darf nicht auf eine schreibbare Page zeigen. Load braucht <code>R</code> und darf nicht aus einer executable Page lesen. Store braucht <code>W</code>, <code>D</code> und darf nicht in eine executable Page schreiben.</li>
+        </ol>
+        <div class="note">
+          <code>FENCE.I</code> setzt im Core das TLB-Flush-Signal. Das ist im
+          aktuellen Design der sichtbare Synchronisationspunkt fuer geaenderte
+          Uebersetzungs-/Rechteentscheidungen; einen separaten I-Cache gibt es
+          derzeit nicht.
+        </div>
+      </section>
+
+      <section>
+        <h2>Aktuelles MMU-Regionenmodell</h2>
+        <p>
+          Der Page-Walker versteht zwei Modi. Mit <code>satp[19:0] != 0</code>
+          nutzt er eine echte zweistufige HarvOS-Page-Table im Daten-RAM. L1-
+          und L0-Eintraege sind 32-Bit-Worte der Form
+          <code>{phys[31:12], 4'b0000, flags[7:0]}</code>. L1-Eintraege ohne
+          <code>R/W/X</code> zeigen auf eine L0-Page; L0-Eintraege mit
+          <code>R/W/X</code> sind Leaf-PTEs. Mit <code>satp[19:0] == 0</code>
+          nutzt er weiter das regionale Fallback-Modell fuer Boot und einfache
+          Tests.
+        </p>
+        <table>
+          <tr><th>Modus</th><th>Virtuelle Region</th><th>Zugriff</th><th>Ergebnis</th></tr>
+          <tr><td>PPN gesetzt</td><td>Alle 4-KiB-Seiten</td><td>Fetch/Load/Store</td><td>L1/L0-PTE aus DMEM, <code>paddr={leaf[31:12], vaddr[11:0]}</code>; invalidierte PTEs bilden Guard-Pages.</td></tr>
+          <tr><td>ASID 0</td><td>IMEM/I-ROM (<code>vaddr &lt; IMEM_WORDS * 4</code>)</td><td>Fetch</td><td><code>paddr=vaddr</code>, Flags <code>V|R|X|A</code>.</td></tr>
+          <tr><td>ASID 0</td><td>DMEM (<code>D_RAM_BASE</code> bis <code>D_RAM_BASE + DMEM_WORDS * 4 - 1</code>)</td><td>Load/Store</td><td><code>paddr=vaddr</code>, Flags <code>V|R|W|U|A|D</code>.</td></tr>
+          <tr><td>ASID 0</td><td>MMIO (<code>MMIO_BASE</code> bis <code>MMIO_BASE + MMIO_BYTES - 1</code>)</td><td>Load/Store</td><td>Supervisor-gueltig, Flags <code>V|R|W|A|D</code>, kein <code>U</code>-Flag.</td></tr>
+          <tr><td>ASID &gt; 0</td><td><code>USER_TEXT_VBASE</code> bis <code>+64 KiB</code></td><td>Fetch</td><td>IMEM-Slot <code>USER_TEXT_VBASE + (ASID-1)*64 KiB + offset</code>, Flags <code>V|R|X|U|A</code>.</td></tr>
+          <tr><td>ASID &gt; 0</td><td><code>USER_TEXT_VBASE</code> bis <code>+64 KiB</code></td><td>Load/Store</td><td>DMEM-Slot <code>D_RAM_BASE + (ASID-1)*128 KiB + offset</code>, Flags <code>V|R|W|U|A|D</code>.</td></tr>
+          <tr><td>ASID &gt; 0</td><td><code>0x6ffff000</code> bis <code>0x70000000</code></td><td>Load/Store</td><td>Eigener User-Stack im DMEM-Slot bei Offset <code>0x8000</code>.</td></tr>
+          <tr><td>ASID &gt; 0</td><td><code>0x70001000 + (ASID-1)*4 KiB</code></td><td>Load/Store</td><td>Eigene Startparameterseite im DMEM-Slot bei Offset <code>0x9000</code>.</td></tr>
+          <tr><td>ASID &gt; 0</td><td><code>0x70010000 + (ASID-1)*64 KiB</code></td><td>Load/Store</td><td>Eigenes Content-Bundle im DMEM-Slot bei Offset <code>0xa000</code>; fremde Slots faulten.</td></tr>
+          <tr><td>Alle</td><td>IMEM als Datenziel oder DMEM als Fetch-Ziel</td><td>Fetch/Load/Store</td><td><code>SCAUSE_HARVARD_VIOLATION</code>.</td></tr>
+          <tr><td>Alle</td><td>Alle anderen Adressen</td><td>Fetch/Load/Store</td><td>Instruktions-, Load- oder Store-Access-Fault.</td></tr>
+        </table>
+        <p>
+          Der Supervisor-Helfer <code>hvs_pagetable_map_pages</code> baut diese
+          L1/L0-Struktur, lehnt <code>W|X</code>-Mappings ab und kann
+          Guard-Pages ueber <code>hvs_pagetable_guard_page</code> explizit als
+          invalidierte L0-Eintraege setzen. Der Supervisor-Loader verlangt fuer
+          App-Starts physische PTE-Lese-/Schreib-Ops, setzt pro Task eine eigene
+          Root-Page und installiert Guard-Pages unterhalb und oberhalb des
+          User-Stacks sowie um Parameter-/Content-Bereiche. Das zusammengesetzte Debug-PTE hat die Form
+          <code>{paddr[31:12], 4'h0, flags}</code>. Wenn kein TLB-Treffer und
+          kein gueltiges Walker-Ergebnis vorliegt, wird dieser Debugwert auf
+          <code>0</code> gesetzt.
+        </p>
+      </section>
+
+      <section>
+        <h2>MPU und Locking</h2>
+        <p>
+          Die MPU setzt nach der MMU die groben physischen Grenzen durch. Sie ist
+          eine feste HarvOS-Regionenpruefung und nicht dasselbe wie RISC-V PMP:
+          Es gibt keine <code>pmpcfg</code>/<code>pmpaddr</code>-CSRs, keine
+          TOR/NA4/NAPOT-Adressmodi und keine priorisierte PMP-Eintragsliste.
+          Die erlaubten Bereiche kommen aus den SoC-Parametern fuer IMEM, DMEM
+          und MMIO.
+        </p>
+        <table>
+          <tr><th>Zugriff</th><th>Erlaubt</th><th>Fehlerfall</th></tr>
+          <tr><td>Fetch</td><td>Nur IMEM/I-ROM (<code>addr &lt; IMEM_WORDS * 4</code>) und nur wenn das MPU-Lock-Bit gesetzt ist.</td><td>Fetch aus DMEM ergibt <code>SCAUSE_HARVARD_VIOLATION</code>; andere Adressen ergeben <code>SCAUSE_INST_ACCESS_FAULT</code>.</td></tr>
+          <tr><td>Load/Store DMEM</td><td>DMEM von <code>D_RAM_BASE</code> bis <code>D_RAM_BASE + DMEM_WORDS * 4 - 1</code>.</td><td>Zugriff auf IMEM/I-ROM ergibt <code>SCAUSE_HARVARD_VIOLATION</code>.</td></tr>
+          <tr><td>Load/Store MMIO</td><td>Nur im Supervisor-Kontext; User-Mode-Zugriffe werden verweigert.</td><td>User-Mode-MMIO oder Adressen ausserhalb der Regionen ergeben Load-/Store-Access-Faults.</td></tr>
+          <tr><td><code>CLRMEM</code></td><td>Nur Supervisor, nur DMEM, nur 4-Byte aligned.</td><td>MMIO wird fuer <code>CLRMEM</code> explizit abgelehnt.</td></tr>
+        </table>
+        <p>
+          Das CSR <code>smpuctl</code> enthaelt in dieser Implementierung nur ein
+          Lock-Bit. Beim Reset ist es gesetzt, beim Lesen wird es immer sichtbar
+          gesetzt, und ein Schreibzugriff setzt den Lock-Zustand ebenfalls.
+          Zusaetzlich besitzt der IMEM-Loader seinen eigenen Lock-Zustand.
+        </p>
+        <div class="note">
+          Der harte IMEM-Lock ist der entscheidende Mechanismus fuer die
+          Harvard-Trennung nach dem Boot: Nach <code>HARVOS_IMEM_LOADER_CMD_LOCK</code>
+          akzeptiert der Loader keine neuen Instruktionswrites mehr bis Reset.
+        </div>
+      </section>
+
+      <section>
+        <h2>MPU-Ablauf im Detail</h2>
+        <p>
+          Die MPU sieht keine virtuellen Adressen mehr, sondern nur die physische
+          Adresse aus der MMU. Sie entscheidet rein kombinatorisch anhand von
+          Zugriffstyp, Privilegienmodus, Region und Lock-Bit.
+        </p>
+        <ol>
+          <li><code>in_irom</code> ist wahr, wenn <code>addr &lt; I_ROM_BYTES</code>. Im SoC ist <code>I_ROM_BYTES = IMEM_WORDS * 4</code>.</li>
+          <li><code>in_dram</code> ist wahr, wenn <code>D_RAM_BASE &lt;= addr &lt; D_RAM_BASE + D_RAM_BYTES</code>. Im SoC ist <code>D_RAM_BYTES = DMEM_WORDS * 4</code>.</li>
+          <li><code>in_mmio</code> ist wahr, wenn <code>MMIO_BASE &lt;= addr &lt; MMIO_BASE + MMIO_BYTES</code>.</li>
+          <li>Fetch wird nur erlaubt, wenn <code>in_irom</code> und das MPU-Lock-Bit gesetzt sind.</li>
+          <li>Load/Store wird fuer DMEM erlaubt. MMIO wird nur erlaubt, wenn der Zugriff nicht aus User Mode kommt. IMEM/I-ROM ist fuer Datenzugriffe immer verboten.</li>
+          <li>Die MPU setzt das Signal <code>mmio</code>, wenn die physische Adresse im MMIO-Fenster liegt. Der Datenpfad nutzt dieses Signal, um MMIO-Zugriffe vom normalen DMEM-Pfad zu trennen.</li>
+        </ol>
+        <table>
+          <tr><th>Fall</th><th>MPU-Entscheidung</th><th>Cause bei Verbot</th></tr>
+          <tr><td>Fetch aus IMEM/I-ROM mit Lock</td><td>Erlaubt.</td><td>-</td></tr>
+          <tr><td>Fetch aus IMEM/I-ROM ohne Lock</td><td>Verboten.</td><td><code>SCAUSE_INST_ACCESS_FAULT</code>.</td></tr>
+          <tr><td>Fetch aus DMEM</td><td>Verboten.</td><td><code>SCAUSE_HARVARD_VIOLATION</code>.</td></tr>
+          <tr><td>Load/Store in DMEM</td><td>Erlaubt.</td><td>-</td></tr>
+          <tr><td>Load/Store in IMEM/I-ROM</td><td>Verboten.</td><td><code>SCAUSE_HARVARD_VIOLATION</code>.</td></tr>
+          <tr><td>Supervisor-Load/Store in MMIO</td><td>Erlaubt und als MMIO markiert.</td><td>-</td></tr>
+          <tr><td>User-Load/Store in MMIO</td><td>Verboten.</td><td><code>SCAUSE_LOAD_ACCESS_FAULT</code> oder <code>SCAUSE_STORE_ACCESS_FAULT</code>.</td></tr>
+          <tr><td>Load/Store ausserhalb aller Regionen</td><td>Verboten.</td><td><code>SCAUSE_LOAD_ACCESS_FAULT</code> oder <code>SCAUSE_STORE_ACCESS_FAULT</code>.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Trap-Prioritaet im Core</h2>
+        <p>
+          Der CPU-Zustandsautomat prueft Schutzfehler in einer festen Reihenfolge.
+          Dadurch ist eindeutig, welche Trap-Ursache sichtbar wird, wenn mehrere
+          Bedingungen gleichzeitig zutreffen.
+        </p>
+        <table>
+          <tr><th>Pfad</th><th>Reihenfolge</th></tr>
+          <tr><td>Fetch</td><td>PC-Alignment, externer IRQ bei gesetztem <code>sstatus[0]</code>, Fetch-MMU, Fetch-MPU, danach Instruktionsread.</td></tr>
+          <tr><td>Load</td><td>Funct3-Unterstuetzung, Alignment, Data-MMU, Data-MPU, Bus-Ready, danach Writeback.</td></tr>
+          <tr><td>Store</td><td>Funct3-Unterstuetzung, Alignment, Data-MMU, Data-MPU, Bus-Ready, danach Store-Abschluss.</td></tr>
+          <tr><td><code>CLRMEM</code></td><td>Supervisor-Pruefung im Decode, dann pro Wort Alignment, Data-MMU, Data-MPU und explizites Verbot von MMIO.</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Boot-ROM-Payload-Layout</h2>
+        <p>
+          Das Boot-ROM berechnet Startparameter und Content-Bundle dynamisch
+          relativ zum hoechsten geladenen ELF-Segment. Dadurch werden groessere
+          <code>.bss</code>-Bereiche nicht mehr von statischen Parametern
+          ueberschrieben.
+        </p>
+        <pre><code>params_addr  = round_up(highest_loaded_segment_end, 4096)
+content_addr = params_addr + 4096
+stack_guard  = BOOT_APP_STACK_TOP - BOOT_APP_STACK_GUARD
+require content_addr + BOOT_MAX_BUNDLE &lt;= stack_guard</code></pre>
+      </section>
+
+      <section>
+        <h2>App-Startparameter</h2>
+        <table>
+          <tr><th>Feld</th><th>Bedeutung</th></tr>
+          <tr><td><code>app_id</code></td><td>Numerische Anwendungkennung; HarvTTP nutzt aktuell <code>1</code>.</td></tr>
+          <tr><td><code>service_mask</code></td><td>Aus YAML gelesene Service-Faehigkeiten.</td></tr>
+          <tr><td><code>mem_base</code>, <code>mem_size</code></td><td>Geladener ELF-Speicherbereich.</td></tr>
+          <tr><td><code>debug_flags</code></td><td>Debug-Konfiguration aus YAML.</td></tr>
+          <tr><td><code>preloaded_content_vaddr</code>, <code>preloaded_content_size</code></td><td>Vorab vom Boot-ROM geladenes HTTP-Bundle.</td></tr>
+          <tr><td><code>config_path</code></td><td>Pfad zur YAML-Datei auf dem Programm-USB.</td></tr>
+          <tr><td><code>data_path</code></td><td>Pfad zum persistenten Datenordner auf dem Daten-USB.</td></tr>
+          <tr><td><code>content_root_path</code></td><td>Bei HarvTTP: <code>/confg/harvttp/httproot</code>.</td></tr>
+        </table>
+      </section>
+
+      <div class="footer-nav">
+        <a href="isa.html">Zurueck: ISL</a>
+        <a href="boot.html">Weiter: Boot-ROM</a>
+      </div>
+    </article>
+  </main>
+</body>
+</html>
